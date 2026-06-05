@@ -250,20 +250,6 @@
 .pl-meta { font-size: 22rpx; color: #AAAAAA; }
 .pl-invite { background: #F0FBF5; color: #2BB673; border: 1rpx solid rgba(43,182,115,0.3); font-size: 22rpx; font-weight: 700; padding: 10rpx 22rpx; border-radius: 100rpx; flex-shrink: 0; }
 
-/* ── Feed card ── */
-.feed-list { display: flex; flex-direction: column; }
-.feed-item { display: flex; align-items: center; gap: 20rpx; padding: 20rpx 0; border-bottom: 1rpx solid #F5F5F5; }
-.feed-item:last-child { border-bottom: none; }
-.feed-icon-wrap {
-  width: 56rpx; height: 56rpx; border-radius: 50%;
-  background: #F2FAF5; display: flex; align-items: center;
-  justify-content: center; font-size: 26rpx; flex-shrink: 0;
-}
-.feed-body { flex: 1; }
-.feed-text { font-size: 26rpx; color: #1A1A1A; font-weight: 500; display: block; }
-.feed-sub { font-size: 22rpx; color: #AAAAAA; margin-top: 4rpx; display: block; }
-.feed-chevron { font-size: 32rpx; color: #CCCCCC; flex-shrink: 0; }
-
 /* ── Weekly rhythm ── */
 .weekly-card { }
 .weekly-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28rpx; }
@@ -287,57 +273,14 @@
 .achievement-name { font-size: 22rpx; font-weight: 700; color: #1A1A1A; text-align: center; }
 .achievement-desc { font-size: 18rpx; color: #AAAAAA; text-align: center; line-height: 1.4; }
 
-/* ── 比赛回忆 ── */
-.rm-list { padding: 0 28rpx 28rpx; display: flex; flex-direction: column; gap: 20rpx; }
-
-.rm-card {
-  background: #FFFFFF; border-radius: 36rpx; overflow: hidden;
-  box-shadow: 0 4rpx 24rpx rgba(0,0,0,0.05); border: 1rpx solid #F0F0F0;
-}
-.rm-card-dim { opacity: 0.5; }
-
-/* 媒体条 */
-.rm-media-strip { display: flex; height: 200rpx; }
-.rm-media-thumb { flex: 1; height: 200rpx; }
-
-/* 卡片内容区 */
-.rm-body { padding: 28rpx 32rpx 24rpx; }
-
-/* 球场 + 时间 */
-.rm-hd { display: flex; justify-content: space-between; align-items: center; margin-bottom: 28rpx; }
-.rm-location { font-size: 28rpx; font-weight: 700; color: #1A1A1A; }
-.rm-date { font-size: 22rpx; color: #AAAAAA; }
-
-/* 对阵行 */
-.rm-vs-wrap { display: flex; align-items: center; justify-content: space-between; margin-bottom: 28rpx; }
-.rm-side { display: flex; flex-direction: column; align-items: center; gap: 10rpx; min-width: 100rpx; }
-.rm-vs-mid { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; }
-.rm-av {
-  width: 76rpx; height: 76rpx; border-radius: 50%;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 28rpx; font-weight: 900; color: #FFFFFF;
-}
-.rm-av-me { box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.18); }
-.rm-av-opp { border: 2.5rpx solid #FFFFFF; }
-.rm-av-group { display: flex; }
-.rm-av-name { font-size: 22rpx; color: #888; max-width: 110rpx; text-align: center; line-height: 1.4; }
-.rm-score { font-size: 52rpx; font-weight: 900; color: #1A1A1A; letter-spacing: -2rpx; line-height: 1; }
-.rm-vs-dash { font-size: 26rpx; font-weight: 700; color: #CCCCCC; letter-spacing: 4rpx; }
-
-/* 独自练球 */
-.rm-solo-wrap { display: flex; align-items: center; gap: 24rpx; margin-bottom: 28rpx; }
-.rm-solo-vibe { font-size: 30rpx; font-weight: 600; color: #555; }
-
-/* 底部 */
-.rm-ft { display: flex; align-items: center; justify-content: space-between; padding-top: 20rpx; border-top: 1rpx solid #F5F5F5; }
-.rm-tags { display: flex; gap: 10rpx; align-items: center; flex-wrap: wrap; }
-.rm-tag-lv { font-size: 20rpx; font-weight: 700; border: 1.5rpx solid; border-radius: 100rpx; padding: 4rpx 16rpx; background: transparent; }
-.rm-tag { font-size: 20rpx; color: #888; background: #F7F8FA; border-radius: 100rpx; padding: 4rpx 16rpx; }
-.rm-tag-cancel { color: #FF6B6B; background: #FFF0F0; }
-.rm-ft-right { display: flex; align-items: center; gap: 12rpx; flex-shrink: 0; }
-.rm-dur { font-size: 22rpx; color: #AAAAAA; }
-.rm-media-pill { font-size: 20rpx; color: #2BB673; background: #E8F9F1; border-radius: 100rpx; padding: 4rpx 14rpx; font-weight: 600; }
-.rm-arrow { font-size: 40rpx; color: #DDDDDD; }
+/* ── 比赛回忆（轻列表）── */
+.rl-list { display: flex; flex-direction: column; }
+.rl-row { display: flex; flex-direction: column; padding: 20rpx 0; border-bottom: 1rpx solid #F0F0F0; }
+.rl-row:last-child { border-bottom: none; padding-bottom: 0; }
+.rl-row-dim { opacity: 0.45; }
+.rl-meta { font-size: 22rpx; color: #AAAAAA; margin-bottom: 6rpx; }
+.rl-main { font-size: 28rpx; font-weight: 600; color: #1A1A1A; }
+.rl-photo { font-size: 22rpx; color: #2BB673; margin-top: 6rpx; }
 
 .empty-wrap { display: flex; flex-direction: column; align-items: center; padding: 60rpx 0; gap: 16rpx; }
 .empty-emoji { font-size: 72rpx; }

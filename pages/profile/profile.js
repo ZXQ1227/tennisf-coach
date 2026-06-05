@@ -59,7 +59,6 @@ Page({
     recentGames: [],
     earnedCount: 0,
     weeklyDays: [],
-    feedItems: [],
     heatmapWeeks: [],
     showDaySheet: false,
     daySheetDate: '',
@@ -100,11 +99,6 @@ Page({
   goSetup: function() { wx.navigateTo({ url: '/pages/setup/setup' }) },
   goEdit: function() { wx.navigateTo({ url: '/pages/setup/setup?mode=edit' }) },
   goPostTab: function() { wx.switchTab({ url: '/pages/post/post' }) },
-
-  goFeedDetail: function(e) {
-    var id = e.currentTarget.dataset.id
-    if (id) wx.navigateTo({ url: '/pages/detail/detail?id=' + id })
-  },
 
   goDetailFromTimeline: function(e) {
     var id = e.currentTarget.dataset.id
@@ -395,10 +389,22 @@ Page({
         else if (p.matchType === 'doubles') { vibeText = '双打搭档' }
         else { vibeText = '单打对决' }
 
+        // 轻 feed 一行描述
+        var rmDesc
+        if (p.cancelled) {
+          rmDesc = '🚫 已取消'
+        } else if (!hasOpponent) {
+          rmDesc = '🎾 独自练球 · ' + durationText
+        } else if (scoreText) {
+          rmDesc = '🎾 对战 ' + opponentText + ' · ' + scoreText
+        } else {
+          rmDesc = '🎾 和 ' + opponentText + ' · ' + durationText
+        }
+
         return Object.assign({}, processed, {
           hasOpponent: hasOpponent, opponentAvatars: opponentAvatars, opponentText: opponentText,
           scoreText: scoreText, durationText: durationText, dayAgoText: dayAgoText,
-          vibeText: vibeText, mediaUrls: [], hasMedia: false, mediaCount: 0
+          vibeText: vibeText, rmDesc: rmDesc, mediaUrls: [], hasMedia: false, mediaCount: 0
         })
       })
 
@@ -493,26 +499,6 @@ Page({
         })
       })
 
-      // Activity feed
-      var feedItems = []
-      if (streak >= 2) {
-        feedItems.push({ icon: '🔥', type: 'streak', text: '连续打球 ' + streak + ' 天', sub: '' })
-      }
-      allRaw.slice(0, 5).forEach(function(p) {
-        var pNames = (p.joiners || []).filter(function(j) { return j !== nickname })
-        var whoText = pNames.length ? '和 ' + pNames.slice(0, 2).join('、') : '独自练球'
-        var mins = (p.manuallyEnded && p.endedAt && p.gameTimestamp)
-          ? Math.max(0, Math.floor((p.endedAt - p.gameTimestamp) / 60000))
-          : (p.estimatedDuration || 120)
-        var fh = Math.floor(mins / 60); var fm = mins % 60
-        var durText = fh > 0 ? fh + ' 小时' + (fm > 0 ? fm + ' 分' : '') : fm + ' 分钟'
-        var fdiff = Math.floor((new Date(todayStr) - new Date(p.date)) / 86400000)
-        var dayText = fdiff === 0 ? '今天' : fdiff === 1 ? '昨天' : fdiff + ' 天前'
-        var sub = (p.location ? p.location + ' · ' : '') + dayText
-        feedItems.push({ icon: '🎾', type: 'game', text: whoText + ' 打了 ' + durText, sub: sub, id: p._id })
-      })
-      feedItems = feedItems.slice(0, 6)
-
       this.setData({
         totalGames: totalGames, monthlyGames: monthlyGames, streak: streak,
         totalHoursNum: totalHoursNum, totalHoursUnit: totalHoursUnit,
@@ -520,7 +506,7 @@ Page({
         partners: partners, achievements: achievements, earnedCount: earnedCount,
         pinnedAchievList: pinnedAchievList,
         recentGames: recentGames, heatmapWeeks: heatmapWeeks,
-        weeklyDays: weeklyDays, feedItems: feedItems, loading: false
+        weeklyDays: weeklyDays, loading: false
       })
       // 写入 globalData 供动态页使用
       app.globalData.activityCache = {

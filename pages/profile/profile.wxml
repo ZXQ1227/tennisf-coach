@@ -107,22 +107,6 @@
 
     <view class="body">
 
-      <!-- 最近动态 -->
-      <view class="card" wx:if="{{feedItems.length > 0}}">
-        <view class="card-title">最近动态</view>
-        <view class="feed-list">
-          <view wx:for="{{feedItems}}" wx:key="index" wx:for-item="item"
-                class="feed-item" bindtap="goFeedDetail" data-id="{{item.id}}">
-            <view class="feed-icon-wrap">{{item.icon}}</view>
-            <view class="feed-body">
-              <text class="feed-text">{{item.text}}</text>
-              <text class="feed-sub" wx:if="{{item.sub}}">{{item.sub}}</text>
-            </view>
-            <view class="feed-chevron" wx:if="{{item.type === 'game'}}">›</view>
-          </view>
-        </view>
-      </view>
-
       <!-- 本周节奏 -->
       <view class="card weekly-card">
         <view class="weekly-hd">
@@ -184,70 +168,15 @@
       </view>
 
       <!-- 比赛回忆 -->
-      <view wx:if="{{recentGames.length > 0}}">
-        <view class="card-title" style="padding:0 32rpx 12rpx">比赛回忆</view>
-        <view class="rm-list">
+      <view class="card" wx:if="{{recentGames.length > 0}}">
+        <view class="card-title">比赛回忆</view>
+        <view class="rl-list">
           <view wx:for="{{recentGames}}" wx:key="_id" wx:for-item="g"
-                class="rm-card {{g.cancelled ? 'rm-card-dim' : ''}}"
+                class="rl-row {{g.cancelled ? 'rl-row-dim' : ''}}"
                 bindtap="goDetailFromTimeline" data-id="{{g._id}}">
-
-            <!-- 媒体条 -->
-            <view class="rm-media-strip" wx:if="{{g.hasMedia}}">
-              <image wx:for="{{g.mediaUrls}}" wx:key="*this" wx:for-item="url"
-                     src="{{url}}" class="rm-media-thumb" mode="aspectFill" />
-            </view>
-
-            <!-- 卡片主体 -->
-            <view class="rm-body">
-
-              <!-- 球场 + 时间 -->
-              <view class="rm-hd">
-                <text class="rm-location">{{g.location || '未知球场'}}</text>
-                <text class="rm-date">{{g.dayAgoText}} {{g.time}}</text>
-              </view>
-
-              <!-- 对阵行（有对手） -->
-              <view class="rm-vs-wrap" wx:if="{{g.hasOpponent}}">
-                <view class="rm-side">
-                  <view class="rm-av rm-av-me" style="background:{{avatarColor}}">我</view>
-                  <text class="rm-av-name">我</text>
-                </view>
-                <view class="rm-vs-mid">
-                  <text wx:if="{{g.scoreText}}" class="rm-score">{{g.scoreText}}</text>
-                  <text wx:else class="rm-vs-dash">VS</text>
-                </view>
-                <view class="rm-side">
-                  <view class="rm-av-group">
-                    <view wx:for="{{g.opponentAvatars}}" wx:key="name" wx:for-item="av"
-                          class="rm-av rm-av-opp"
-                          style="background:{{av.color}};margin-left:{{index > 0 ? '-16rpx' : '0'}}">{{av.initial}}</view>
-                  </view>
-                  <text class="rm-av-name">{{g.opponentText}}</text>
-                </view>
-              </view>
-
-              <!-- 独自练球 -->
-              <view class="rm-solo-wrap" wx:else>
-                <view class="rm-av rm-av-me" style="background:{{avatarColor}}">我</view>
-                <text class="rm-solo-vibe">{{g.vibeText}}</text>
-              </view>
-
-              <!-- 底部标签行 -->
-              <view class="rm-ft">
-                <view class="rm-tags">
-                  <view wx:if="{{g.levelInfo}}" class="rm-tag-lv"
-                        style="color:{{g.levelInfo.color}};border-color:{{g.levelInfo.color}}">{{g.levelInfo.label}}</view>
-                  <view wx:if="{{g.matchLabel}}" class="rm-tag">{{g.matchLabel}}</view>
-                  <view wx:if="{{g.cancelled}}" class="rm-tag rm-tag-cancel">已取消</view>
-                </view>
-                <view class="rm-ft-right">
-                  <text class="rm-dur">{{g.durationText}}</text>
-                  <view wx:if="{{g.hasMedia}}" class="rm-media-pill">📷 {{g.mediaCount}}</view>
-                  <text class="rm-arrow">›</text>
-                </view>
-              </view>
-
-            </view>
+            <text class="rl-meta">{{g.dayAgoText}} · {{g.location || '未知球场'}}</text>
+            <text class="rl-main">{{g.rmDesc}}</text>
+            <text class="rl-photo" wx:if="{{g.hasMedia}}">📸 {{g.mediaCount}} 张</text>
           </view>
         </view>
       </view>
