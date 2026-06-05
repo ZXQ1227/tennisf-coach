@@ -75,8 +75,11 @@ Page({
       const joinedByOpenId = !!(myOpenId && (res.data.joinerOpenids || []).indexOf(myOpenId) !== -1)
       // 昵称比对兜底（兼容旧数据、openid 尚未缓存的场景）
       const joinedByName = !!(myName && (post.joiners || []).indexOf(myName) !== -1)
-      post.alreadyJoined = joinedByOpenId || joinedByName
+      // isCreator：openid 主判 + creatorNickname 兜底（openid 未缓存时仍能识别）
       const isCreator = !!(myOpenId && res.data._openid === myOpenId)
+        || !!(myName && res.data.creatorNickname && res.data.creatorNickname === myName)
+      // 已加入但非发起人（排除创建者自己，避免被算成普通参与者）
+      post.alreadyJoined = !isCreator && (joinedByOpenId || joinedByName)
       const isParticipant = isCreator || post.alreadyJoined
 
       // ── 坑位处理 ──
@@ -302,9 +305,11 @@ Page({
 
   cancelGame: function() {
     var self = this
+    var post = this.data.post
+    var othersJoined = post && (post.joined || 1) > 1
     wx.showModal({
       title: '取消球局',
-      content: '确认取消这场约球？所有球友都会收到通知',
+      content: othersJoined ? '确认取消这场约球？已加入的球友都会收到通知' : '确认取消这场约球？',
       confirmText: '取消球局',
       confirmColor: '#FF6B6B',
       cancelText: '再想想',

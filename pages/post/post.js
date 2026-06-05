@@ -329,6 +329,7 @@ Page({
           fee: data.fee,
           contactInfo: data.contactInfo,
           note: data.note,
+          creatorNickname: nickname,
           joined: 1,
           joiners: [nickname],
           joinerOpenids: myOpenid ? [myOpenid] : [],
