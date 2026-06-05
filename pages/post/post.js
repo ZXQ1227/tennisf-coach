@@ -99,13 +99,6 @@ Page({
     return String(t.getHours()).padStart(2, '0') + ':' + String(t.getMinutes()).padStart(2, '0')
   },
 
-  quickNow: function() {
-    const now = new Date()
-    const pad = function(n) { return String(n).padStart(2, '0') }
-    const todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
-    this.setData({ date: todayStr, time: pad(now.getHours()) + ':' + pad(now.getMinutes()) })
-    wx.showToast({ title: '已设为现在', icon: 'none' })
-  },
 
   nextStep: function() {
     const step = this.data.step

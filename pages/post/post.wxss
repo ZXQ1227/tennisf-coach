@@ -89,20 +89,6 @@
   gap: 14rpx;
 }
 
-.time-chip-now {
-  flex: 0 0 auto;
-  background: #2BB673;
-  border-color: #2BB673;
-  padding: 30rpx 28rpx;
-  justify-content: center;
-  box-shadow: 0 4rpx 16rpx rgba(43,182,115,0.30);
-}
-
-.time-chip-now .time-text {
-  color: #FFFFFF;
-  font-weight: 700;
-  font-size: 26rpx;
-}
 
 .time-icon { font-size: 36rpx; }
 .time-text { font-size: 30rpx; color: #1A1A1A; font-weight: 500; }

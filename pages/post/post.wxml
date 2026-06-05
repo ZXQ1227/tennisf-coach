@@ -38,9 +38,6 @@
             <text class="time-text">{{time || '时间'}}</text>
           </view>
         </picker>
-        <view class="time-chip time-chip-now" bindtap="quickNow">
-          <text class="time-text">现在</text>
-        </view>
       </view>
     </view>
 
