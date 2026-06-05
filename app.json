@@ -1,0 +1,34 @@
+{
+  "pages": [
+    "pages/index/index",
+    "pages/feed/feed",
+    "pages/post/post",
+    "pages/profile/profile",
+    "pages/setup/setup",
+    "pages/detail/detail",
+    "pages/tennis-mode/tennis-mode",
+    "pages/pub-profile/pub-profile",
+    "pages/game-report/game-report"
+  ],
+  "window": {
+    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarTitleText": "",
+    "navigationBarTextStyle": "black",
+    "backgroundTextStyle": "light",
+    "backgroundColor": "#F7F8FA"
+  },
+  "tabBar": {
+    "color": "#BBBBBB",
+    "selectedColor": "#2BB673",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      { "pagePath": "pages/index/index", "text": "约球" },
+      { "pagePath": "pages/feed/feed", "text": "动态" },
+      { "pagePath": "pages/post/post", "text": "发起" },
+      { "pagePath": "pages/profile/profile", "text": "我的" }
+    ]
+  },
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

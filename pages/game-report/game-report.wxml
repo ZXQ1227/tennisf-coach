@@ -1,0 +1,113 @@
+<view class="gr-page" style="padding-top:{{statusBarHeight}}px">
+
+  <!-- Loading -->
+  <view class="gr-loading" wx:if="{{loading}}">
+    <view class="gr-spin"></view>
+  </view>
+
+  <view wx:elif="{{post}}" class="gr-body">
+
+    <!-- ── Header ── -->
+    <view class="gr-header">
+      <view class="gr-report-badge">🎾 今日球报</view>
+      <view class="gr-venue">{{venue}}</view>
+      <view class="gr-date">{{dateLabel}}</view>
+      <view class="gr-tags" wx:if="{{levelLabel || matchTypeLabel}}">
+        <view class="gr-tag" wx:if="{{levelLabel}}">{{levelLabel}}</view>
+        <view class="gr-tag" wx:if="{{matchTypeLabel}}">{{matchTypeLabel}}</view>
+      </view>
+    </view>
+
+    <!-- ── Score Card ── -->
+    <view class="gr-score-card">
+      <view class="gr-score-hd">
+        <view class="gr-score-hd-txt">本场比分</view>
+        <view class="gr-sets-win" wx:if="{{setScores.length > 0}}">
+          <text class="gr-win-a {{aSetWins > bSetWins ? 'gr-win-hi' : ''}}">{{aSetWins}}</text>
+          <text class="gr-win-sep">盘</text>
+          <text class="gr-win-colon">:</text>
+          <text class="gr-win-sep">盘</text>
+          <text class="gr-win-b {{bSetWins > aSetWins ? 'gr-win-hi' : ''}}">{{bSetWins}}</text>
+        </view>
+      </view>
+
+      <view class="gr-score-main">
+        <view class="gr-score-side">
+          <view class="gr-player-name">{{players[0] || '我方'}}</view>
+          <view class="gr-score-num {{finalA >= finalB ? 'gr-score-winner' : 'gr-score-loser'}}">{{finalA}}</view>
+        </view>
+        <view class="gr-colon">:</view>
+        <view class="gr-score-side">
+          <view class="gr-player-name">{{players.length > 1 ? players[1] : '对方'}}</view>
+          <view class="gr-score-num {{finalB >= finalA ? 'gr-score-winner' : 'gr-score-loser'}}">{{finalB}}</view>
+        </view>
+      </view>
+
+      <!-- Set breakdown -->
+      <view class="gr-sets-row" wx:if="{{setScores.length > 0}}">
+        <view wx:for="{{setScores}}" wx:key="set" wx:for-item="ss" class="gr-set-item">
+          <text class="gr-set-score">{{ss.a}}:{{ss.b}}</text>
+          <text class="gr-set-lbl">第{{ss.set}}盘</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ── Stats Row ── -->
+    <view class="gr-stats-row">
+      <view class="gr-stat" wx:if="{{duration}}">
+        <view class="gr-stat-num">{{duration}}</view>
+        <view class="gr-stat-lbl">打球时长</view>
+      </view>
+      <view class="gr-stat-div" wx:if="{{duration && players.length > 0}}"></view>
+      <view class="gr-stat" wx:if="{{players.length > 0}}">
+        <view class="gr-stat-num">{{players.length}}</view>
+        <view class="gr-stat-lbl">参与人数</view>
+      </view>
+      <view class="gr-stat-div" wx:if="{{hasMoments}}"></view>
+      <view class="gr-stat" wx:if="{{hasMoments}}">
+        <view class="gr-stat-num">{{photoCount + textCount}}</view>
+        <view class="gr-stat-lbl">精彩记录</view>
+      </view>
+    </view>
+
+    <!-- ── Players ── -->
+    <view class="gr-players-card" wx:if="{{players.length > 0}}">
+      <view class="gr-sec-lbl">参与球员</view>
+      <view class="gr-chips">
+        <view wx:for="{{players}}" wx:key="*this" wx:for-item="name" class="gr-chip">{{name}}</view>
+      </view>
+    </view>
+
+    <!-- ── Moment Summary ── -->
+    <view class="gr-moments-card" wx:if="{{hasMoments}}">
+      <view class="gr-sec-lbl">本场记录</view>
+      <view class="gr-moment-stats">
+        <view class="gr-ms-item" wx:if="{{photoCount > 0}}">
+          <text class="gr-ms-icon">📸</text>
+          <text class="gr-ms-txt">{{photoCount}} 张照片</text>
+        </view>
+        <view class="gr-ms-item" wx:if="{{textCount > 0}}">
+          <text class="gr-ms-icon">✍️</text>
+          <text class="gr-ms-txt">{{textCount}} 条动态</text>
+        </view>
+        <view class="gr-ms-item" wx:if="{{scoreCount > 0}}">
+          <text class="gr-ms-icon">🎾</text>
+          <text class="gr-ms-txt">{{scoreCount}} 次比分</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- ── Brand ── -->
+    <view class="gr-brand">TennisF</view>
+
+    <!-- ── Buttons ── -->
+    <view class="gr-btns">
+      <view class="gr-btn-sec" bindtap="goDetail">查看详情</view>
+      <view class="gr-btn-pri" bindtap="goSquare">回广场</view>
+    </view>
+
+    <view class="gr-safe-bottom" style="height:env(safe-area-inset-bottom)"></view>
+
+  </view>
+
+</view>

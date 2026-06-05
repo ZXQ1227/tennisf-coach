@@ -1,0 +1,356 @@
+.page {
+  padding: 0 32rpx 80rpx;
+  min-height: 100vh;
+}
+
+.page-header {
+  padding: 48rpx 0 32rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.page-title {
+  font-size: 48rpx;
+  font-weight: 800;
+  color: #1A1A1A;
+  letter-spacing: -1rpx;
+}
+
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.step-dot {
+  width: 16rpx;
+  height: 16rpx;
+  border-radius: 50%;
+  background: #E0E0E0;
+}
+
+.step-dot-on { background: #2BB673; }
+
+.step-line {
+  width: 40rpx;
+  height: 4rpx;
+  border-radius: 4rpx;
+  background: #E0E0E0;
+}
+
+.step-line-on { background: #2BB673; }
+
+.step-title {
+  font-size: 28rpx;
+  color: #999;
+  margin-bottom: 40rpx;
+}
+
+.section { margin-bottom: 40rpx; }
+
+.section-label {
+  font-size: 22rpx;
+  font-weight: 600;
+  color: #BBBBBB;
+  letter-spacing: 1rpx;
+  margin-bottom: 16rpx;
+  display: flex;
+  align-items: center;
+  gap: 10rpx;
+}
+
+.optional { font-size: 20rpx; color: #CCC; font-weight: 400; }
+
+.input-card {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 30rpx 32rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #F0F0F0;
+  display: flex;
+  align-items: center;
+}
+
+.input-prefix { font-size: 36rpx; margin-right: 16rpx; }
+.input { flex: 1; font-size: 32rpx; color: #1A1A1A; height: 48rpx; }
+
+.time-row { display: flex; gap: 16rpx; align-items: stretch; }
+
+.time-chip {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 30rpx 24rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #F0F0F0;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+}
+
+.time-chip-now {
+  flex: 0 0 auto;
+  background: #2BB673;
+  border-color: #2BB673;
+  padding: 30rpx 28rpx;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(43,182,115,0.30);
+}
+
+.time-chip-now .time-text {
+  color: #FFFFFF;
+  font-weight: 700;
+  font-size: 26rpx;
+}
+
+.time-icon { font-size: 36rpx; }
+.time-text { font-size: 30rpx; color: #1A1A1A; font-weight: 500; }
+
+.chips-row { display: flex; gap: 14rpx; flex-wrap: wrap; }
+
+.chip {
+  background: #F7F8FA;
+  border-radius: 100rpx;
+  padding: 18rpx 32rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #888;
+  border: 2rpx solid transparent;
+}
+
+.chip-active {
+  background: #E8F9F1;
+  color: #1A9459;
+  border-color: #2BB673;
+}
+
+.seg-ctrl {
+  display: flex;
+  background: #F4F4F4;
+  border-radius: 24rpx;
+  padding: 6rpx;
+  margin-bottom: 16rpx;
+}
+
+.seg-opt {
+  flex: 1;
+  text-align: center;
+  padding: 20rpx;
+  font-size: 28rpx;
+  border-radius: 20rpx;
+  color: #888;
+  font-weight: 500;
+}
+
+.seg-opt-active {
+  background: #FFFFFF;
+  color: #2BB673;
+  font-weight: 700;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.08);
+}
+
+.level-hint {
+  font-size: 24rpx;
+  color: #AAAAAA;
+  padding: 0 8rpx;
+}
+
+.grouped-card {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 0 32rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #F0F0F0;
+}
+
+.group-row {
+  display: flex;
+  align-items: center;
+  padding: 24rpx 0;
+}
+
+.group-row-label {
+  font-size: 28rpx;
+  color: #555;
+  font-weight: 500;
+  width: 80rpx;
+  flex-shrink: 0;
+}
+
+.group-divider { height: 1rpx; background: #F5F5F5; }
+
+.chips-row-sm { display: flex; gap: 12rpx; flex-wrap: wrap; flex: 1; }
+
+.chip-sm {
+  padding: 12rpx 24rpx;
+  border-radius: 100rpx;
+  font-size: 26rpx;
+  color: #888;
+  background: #F4F4F4;
+  font-weight: 500;
+}
+
+.chip-sm-active {
+  background: #E8F9F1;
+  color: #1A9459;
+}
+
+.textarea-card {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1rpx solid #F0F0F0;
+}
+
+.textarea {
+  width: 100%;
+  font-size: 30rpx;
+  color: #1A1A1A;
+  min-height: 100rpx;
+  line-height: 1.6;
+}
+
+.next-btn {
+  width: 100%;
+  background: #1A1A1A;
+  color: #FFFFFF;
+  border-radius: 100rpx;
+  font-size: 32rpx;
+  font-weight: 600;
+  height: 96rpx;
+  line-height: 96rpx;
+  border: none;
+  margin-top: 16rpx;
+}
+
+.nav-row {
+  display: flex;
+  gap: 16rpx;
+  margin-top: 16rpx;
+}
+
+.back-btn {
+  flex: 1;
+  background: #F4F4F4;
+  color: #888;
+  border-radius: 100rpx;
+  font-size: 30rpx;
+  font-weight: 500;
+  height: 96rpx;
+  line-height: 96rpx;
+  border: none;
+}
+
+.next-btn-sm {
+  flex: 2;
+  background: #1A1A1A;
+  color: #FFFFFF;
+  border-radius: 100rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+  height: 96rpx;
+  line-height: 96rpx;
+  border: none;
+}
+
+.submit-btn {
+  flex: 2;
+  background: #2BB673;
+  color: #FFFFFF;
+  border-radius: 100rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+  height: 96rpx;
+  line-height: 96rpx;
+  border: none;
+  box-shadow: 0 10rpx 28rpx rgba(43, 182, 115, 0.4);
+}
+
+.submit-btn[disabled] { background: #CCC; box-shadow: none; }
+
+/* ── 坑位管理 ── */
+.section-label-hint { font-size: 20rpx; color: #BBBBBB; font-weight: 400; margin-left: 12rpx; }
+
+.slots-grid { display: flex; flex-wrap: wrap; gap: 16rpx; }
+
+.slot-card {
+  width: calc(50% - 8rpx);
+  border-radius: 24rpx;
+  padding: 24rpx 16rpx;
+  box-sizing: border-box;
+  border: 1.5rpx solid #EFEFEF;
+}
+.slot-confirmed-card { background: #F0FBF5; border-color: rgba(43,182,115,0.3); }
+.slot-reserved-card  { background: #FFF8EC; border-color: rgba(247,183,49,0.4); }
+.slot-open-card      { background: #F9FAFB; border-color: #E8E8E8; border-style: dashed; }
+
+.slot-inner { display: flex; flex-direction: column; align-items: center; gap: 10rpx; }
+
+.slot-av {
+  width: 72rpx; height: 72rpx; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700; color: #FFFFFF;
+}
+.slot-add {
+  width: 72rpx; height: 72rpx; border-radius: 50%;
+  background: #EAEAEA; display: flex; align-items: center; justify-content: center;
+  font-size: 36rpx; color: #999; font-weight: 300;
+}
+.slot-nick { font-size: 24rpx; font-weight: 600; color: #333; text-align: center; max-width: 120rpx; }
+.slot-nick-open { color: #AAAAAA; font-weight: 400; }
+.slot-tag { font-size: 18rpx; font-weight: 600; color: #2BB673; background: rgba(43,182,115,0.1); padding: 4rpx 12rpx; border-radius: 100rpx; }
+.slot-tag-reserved { color: #D68910; background: rgba(247,183,49,0.15); }
+
+/* ── 坑位 Sheet ── */
+.slot-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.55);
+  display: flex; align-items: flex-end; z-index: 300;
+}
+.slot-sheet {
+  width: 100%; background: #FFFFFF;
+  border-radius: 40rpx 40rpx 0 0;
+  padding: 20rpx 32rpx calc(32rpx + env(safe-area-inset-bottom));
+}
+.slot-sheet-handle { width: 80rpx; height: 8rpx; background: #E5E5E5; border-radius: 4rpx; margin: 0 auto 24rpx; }
+.slot-sheet-title { font-size: 32rpx; font-weight: 700; color: #1A1A1A; margin-bottom: 20rpx; }
+
+/* 搜索栏 */
+.slot-search-bar {
+  display: flex; align-items: center; gap: 12rpx;
+  background: #F5F6F8; border-radius: 20rpx;
+  padding: 18rpx 24rpx; margin-bottom: 16rpx;
+  border: 1.5rpx solid #EFEFEF;
+}
+.slot-search-icon { font-size: 28rpx; }
+.slot-search-input { flex: 1; font-size: 28rpx; color: #1A1A1A; }
+
+/* 搜索结果 */
+.slot-results-scroll { max-height: 480rpx; }
+
+.slot-result-item {
+  display: flex; align-items: center; gap: 20rpx;
+  padding: 18rpx 4rpx; border-bottom: 1rpx solid #F5F5F5;
+}
+.slot-result-av-img { width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0; }
+.slot-result-av {
+  width: 72rpx; height: 72rpx; border-radius: 50%; flex-shrink: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28rpx; font-weight: 700; color: #FFFFFF;
+}
+.slot-result-info { flex: 1; }
+.slot-result-name { font-size: 28rpx; font-weight: 600; color: #1A1A1A; display: block; margin-bottom: 4rpx; }
+.slot-result-level { font-size: 22rpx; color: #AAAAAA; }
+.slot-result-chevron { font-size: 36rpx; color: #DDDDDD; }
+
+.slot-result-empty, .slot-result-hint {
+  padding: 48rpx 0; text-align: center; font-size: 26rpx; color: #AAAAAA;
+}
+
+/* 取消按钮 */
+.slot-sheet-cancel-row { margin-top: 20rpx; }
+.slot-cancel-btn {
+  text-align: center; padding: 22rpx; border-radius: 20rpx;
+  font-size: 28rpx; color: #888; background: #F7F8FA;
+}

@@ -1,0 +1,137 @@
+<view class="page">
+
+  <!-- ── Loading ── -->
+  <view wx:if="{{loading}}" class="loading-wrap">
+    <view class="loading-ring"></view>
+    <view class="loading-txt">加载中...</view>
+  </view>
+
+  <!-- ── Error ── -->
+  <view wx:elif="{{error}}" class="state-wrap">
+    <text class="state-icon">⚠️</text>
+    <text class="state-txt">加载失败，请重试</text>
+  </view>
+
+  <!-- ── 主体（有档案 or notFound 都显示 HeaderCard）── -->
+  <view wx:else class="page-body">
+
+    <!-- 1. HeaderCard -->
+    <view class="header-card">
+      <view class="header-glow-tl"></view>
+      <view class="header-glow-br"></view>
+
+      <view class="header-inner">
+        <!-- 头像 -->
+        <image wx:if="{{player && player.avatarUrl}}" src="{{player.avatarUrl}}"
+               class="header-avatar-img" mode="aspectFill" />
+        <view wx:else class="header-avatar" style="background:{{avatarColor}}">
+          {{nickname ? nickname.slice(-1) : '?'}}
+        </view>
+
+        <!-- 昵称 -->
+        <view class="header-name">{{nickname}}</view>
+
+        <!-- 标签行 -->
+        <view class="header-tags" wx:if="{{levelInfo || styleLabel}}">
+          <view wx:if="{{levelInfo}}" class="header-tag header-tag-lvl" style="color:{{levelInfo.color}}">
+            {{levelInfo.label}} {{levelInfo.range}}
+          </view>
+          <view wx:if="{{styleLabel}}" class="header-tag">{{styleLabel}}</view>
+        </view>
+
+        <!-- 个人宣言 -->
+        <view class="header-bio" wx:if="{{bio}}">" {{bio}} "</view>
+
+        <!-- 无档案提示 -->
+        <view class="header-noprofile" wx:if="{{notFound}}">暂无公开档案</view>
+      </view>
+    </view>
+
+    <!-- 2. StatsCard（有档案时显示）-->
+    <view class="card stats-card" wx:if="{{!notFound}}">
+
+      <!-- 羁绊行（有共同球局才显示）-->
+      <view class="together-row" wx:if="{{togetherCount > 0}}">
+        <text class="together-icon">🤝</text>
+        <text class="together-txt">你们一起打了 <text class="together-num">{{togetherCount}}</text> 场球</text>
+      </view>
+
+      <view class="stats-divider" wx:if="{{togetherCount > 0}}"></view>
+
+      <!-- 公开数据 -->
+      <view class="stats-grid">
+        <view class="stat-item stat-main">
+          <text class="stat-big">{{totalHours}}</text>
+          <text class="stat-unit">小时</text>
+          <text class="stat-label">累计打球</text>
+        </view>
+        <view class="stats-vline"></view>
+        <view class="stat-item">
+          <text class="stat-num">{{monthCount}}</text>
+          <text class="stat-label">本月场次</text>
+        </view>
+      </view>
+
+      <!-- 常驻球场 -->
+      <view class="courts-row" wx:if="{{frequentCourts.length > 0}}">
+        <text class="courts-icon">📍</text>
+        <view class="courts-tags">
+          <view wx:for="{{frequentCourts}}" wx:key="*this" wx:for-item="c" class="court-tag">{{c}}</view>
+        </view>
+      </view>
+
+    </view>
+
+    <!-- 2b. 为什么适合一起打 -->
+    <view class="card compat-card" wx:if="{{!notFound}}">
+      <view class="card-hd">
+        <text class="card-ttl">适合一起打，因为</text>
+      </view>
+      <view class="compat-chips">
+        <view class="compat-chip compat-chip-together" wx:if="{{togetherCount > 0}}">
+          🤝 已一起打了 {{togetherCount}} 场
+        </view>
+        <view class="compat-chip" wx:if="{{monthCount > 0}}">
+          ⚡ 本月已打 {{monthCount}} 场
+        </view>
+        <view wx:for="{{frequentCourts}}" wx:key="*this" wx:for-item="c" wx:if="{{index < 2}}"
+              class="compat-chip">
+          🏟 常驻 {{c}}
+        </view>
+        <view class="compat-chip" wx:if="{{totalHours > 0}}">
+          ⏱ 累计 {{totalHours}} 小时
+        </view>
+        <view class="compat-chip" wx:if="{{unlockedBadges.length > 0}}">
+          🏅 已获 {{unlockedBadges.length}} 枚成就
+        </view>
+      </view>
+    </view>
+
+    <!-- 3. BadgeCard（有已解锁成就时显示）-->
+    <view class="card badge-card" wx:if="{{!notFound && unlockedBadges.length > 0}}">
+      <view class="card-hd">
+        <text class="card-ttl">荣誉勋章</text>
+        <text class="card-sub">{{unlockedBadges.length}} 枚</text>
+      </view>
+      <scroll-view class="badge-scroll" scroll-x>
+        <view class="badge-row">
+          <view wx:for="{{unlockedBadges}}" wx:key="key" wx:for-item="b"
+                class="badge-item" bindtap="onBadgeTap" data-desc="{{b.desc}}">
+            <text class="badge-icon">{{b.icon}}</text>
+            <text class="badge-name">{{b.name}}</text>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <!-- 底部占位（防止内容被 CTA 遮住）-->
+    <view class="cta-spacer"></view>
+
+  </view>
+
+  <!-- 4. FixedBottomCTA -->
+  <view class="cta-bar" wx:if="{{!loading}}">
+    <button class="cta-btn" bindtap="inviteToGame">约 {{nickname}} 打球 🎾</button>
+  </view>
+
+</view>

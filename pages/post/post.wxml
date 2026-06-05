@@ -1,0 +1,216 @@
+<view class="page">
+
+  <view class="page-header">
+    <view class="page-title">组个球局</view>
+    <view class="step-indicator">
+      <view class="step-dot {{step >= 1 ? 'step-dot-on' : ''}}"></view>
+      <view class="step-line {{step >= 2 ? 'step-line-on' : ''}}"></view>
+      <view class="step-dot {{step >= 2 ? 'step-dot-on' : ''}}"></view>
+      <view class="step-line {{step >= 3 ? 'step-line-on' : ''}}"></view>
+      <view class="step-dot {{step >= 3 ? 'step-dot-on' : ''}}"></view>
+    </view>
+  </view>
+
+  <!-- Step 1 -->
+  <view wx:if="{{step === 1}}">
+    <view class="step-title">先告诉我基本信息</view>
+
+    <view class="section">
+      <view class="section-label">在哪打</view>
+      <view class="input-card">
+        <text class="input-prefix">📍</text>
+        <input class="input" placeholder="场地名称" value="{{location}}" bindinput="onLocationInput" />
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-label">什么时候</view>
+      <view class="time-row">
+        <picker mode="date" value="{{date}}" start="{{dateMin}}" bindchange="onDateChange">
+          <view class="time-chip">
+            <text class="time-icon">📅</text>
+            <text class="time-text">{{date ? date.slice(5).replace('-', '/') : '日期'}}</text>
+          </view>
+        </picker>
+        <picker mode="time" value="{{time}}" bindchange="onTimeChange">
+          <view class="time-chip">
+            <text class="time-icon">⏰</text>
+            <text class="time-text">{{time || '时间'}}</text>
+          </view>
+        </picker>
+        <view class="time-chip time-chip-now" bindtap="quickNow">
+          <text class="time-text">现在</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-label">预计打多久</view>
+      <view class="chips-row">
+        <view wx:for="{{durationOptions}}" wx:key="index"
+          class="chip {{item.selected ? 'chip-active' : ''}}"
+          bindtap="selectDuration" data-value="{{item.value}}">{{item.label}}</view>
+      </view>
+    </view>
+
+    <button class="next-btn" bindtap="nextStep">继续 →</button>
+  </view>
+
+  <!-- Step 2 -->
+  <view wx:if="{{step === 2}}">
+    <view class="step-title">这场球局的设定</view>
+
+    <view class="section">
+      <view class="section-label">几人一起</view>
+      <view class="chips-row">
+        <view wx:for="{{needOptions}}" wx:key="index"
+          class="chip {{item.selected ? 'chip-active' : ''}}"
+          bindtap="selectNeed" data-value="{{item.value}}">{{item.value}}人</view>
+      </view>
+    </view>
+
+    <!-- 坑位管理 -->
+    <view class="section" wx:if="{{slots.length > 1}}">
+      <view class="section-label">坑位管理
+        <text class="section-label-hint">点击空位可指定球搭子</text>
+      </view>
+      <view class="slots-grid">
+        <view wx:for="{{slots}}" wx:key="slotIndex" wx:for-item="s" class="slot-card {{s.status === 'CONFIRMED' ? 'slot-confirmed-card' : s.status === 'RESERVED' ? 'slot-reserved-card' : 'slot-open-card'}}">
+          <!-- 已确认（发起人） -->
+          <view wx:if="{{s.status === 'CONFIRMED'}}" class="slot-inner">
+            <view class="slot-av" style="background:{{s.avatarColor}}">{{s.nickname ? s.nickname.slice(-1) : '?'}}</view>
+            <text class="slot-nick">{{s.nickname}}</text>
+            <text class="slot-tag">已到位</text>
+          </view>
+          <!-- 已预留（点击可清除） -->
+          <view wx:elif="{{s.status === 'RESERVED'}}" class="slot-inner" bindtap="clearSlot" data-index="{{s.slotIndex}}">
+            <view class="slot-av" style="background:{{s.avatarColor}}">{{s.nickname ? s.nickname.slice(-1) : '?'}}</view>
+            <text class="slot-nick">{{s.nickname}}</text>
+            <text class="slot-tag slot-tag-reserved">已预留 ×</text>
+          </view>
+          <!-- 公开空位 -->
+          <view wx:else class="slot-inner" bindtap="onSlotPlusTap" data-index="{{s.slotIndex}}">
+            <view class="slot-add">+</view>
+            <text class="slot-nick slot-nick-open">公开招募</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-label">水平要求</view>
+      <view class="seg-ctrl">
+        <view class="seg-opt {{level === 'beginner' ? 'seg-opt-active' : ''}}" bindtap="selectLevel" data-value="beginner">新手</view>
+        <view class="seg-opt {{level === 'intermediate' ? 'seg-opt-active' : ''}}" bindtap="selectLevel" data-value="intermediate">进阶</view>
+        <view class="seg-opt {{level === 'advanced' ? 'seg-opt-active' : ''}}" bindtap="selectLevel" data-value="advanced">竞技</view>
+      </view>
+      <view class="level-hint">{{levelHint}}</view>
+    </view>
+
+    <view class="nav-row">
+      <button class="back-btn" bindtap="prevStep">← 返回</button>
+      <button class="next-btn-sm" bindtap="nextStep">继续 →</button>
+    </view>
+  </view>
+
+  <!-- Step 3 -->
+  <view wx:if="{{step === 3}}">
+    <view class="step-title">最后一步</view>
+
+    <view class="section">
+      <view class="section-label">场地信息</view>
+      <view class="grouped-card">
+        <view class="group-row">
+          <text class="group-row-label">场地</text>
+          <view class="chips-row-sm">
+            <view wx:for="{{courtTypeOptions}}" wx:key="index"
+              class="chip-sm {{item.selected ? 'chip-sm-active' : ''}}"
+              bindtap="selectCourtType" data-value="{{item.value}}">{{item.label}}</view>
+          </view>
+        </view>
+        <view class="group-divider"></view>
+        <view class="group-row">
+          <text class="group-row-label">环境</text>
+          <view class="chips-row-sm">
+            <view class="chip-sm {{!indoor ? 'chip-sm-active' : ''}}" bindtap="setIndoor" data-value="false">室外</view>
+            <view class="chip-sm {{indoor ? 'chip-sm-active' : ''}}" bindtap="setIndoor" data-value="true">室内</view>
+          </view>
+        </view>
+        <view class="group-divider"></view>
+        <view class="group-row">
+          <text class="group-row-label">形式</text>
+          <view class="chips-row-sm">
+            <view wx:for="{{matchTypeOptions}}" wx:key="index"
+              class="chip-sm {{item.selected ? 'chip-sm-active' : ''}}"
+              bindtap="selectMatchType" data-value="{{item.value}}">{{item.label}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-label">费用说明</view>
+      <view class="chips-row">
+        <view wx:for="{{feeOptions}}" wx:key="index"
+          class="chip {{item.selected ? 'chip-active' : ''}}"
+          bindtap="selectFee" data-value="{{item.value}}">{{item.label}}</view>
+      </view>
+    </view>
+
+    <view class="section">
+      <view class="section-label">备注 <text class="optional">选填</text></view>
+      <view class="textarea-card">
+        <textarea class="textarea" placeholder="停车信息、球拍要求..." value="{{note}}" bindinput="onNoteInput" auto-height />
+      </view>
+    </view>
+
+    <view class="nav-row">
+      <button class="back-btn" bindtap="prevStep">← 返回</button>
+      <button class="submit-btn" bindtap="submit" disabled="{{submitting}}">
+        {{submitting ? '发布中...' : '开打 🎾'}}
+      </button>
+    </view>
+  </view>
+
+</view>
+
+<!-- 指定球搭子 Sheet -->
+<view class="slot-overlay" wx:if="{{showSlotSheet}}" bindtap="closeSlotSheet">
+  <view class="slot-sheet" catchtap="noop">
+    <view class="slot-sheet-handle"></view>
+    <view class="slot-sheet-title">指定球搭子</view>
+    <view class="slot-search-bar">
+      <text class="slot-search-icon">🔍</text>
+      <input class="slot-search-input" placeholder="搜索球友昵称..."
+             value="{{slotInput}}" bindinput="onSlotSearch" auto-focus />
+    </view>
+
+    <!-- 搜索结果 -->
+    <scroll-view class="slot-results-scroll" scroll-y wx:if="{{slotSearchResults.length > 0}}">
+      <view wx:for="{{slotSearchResults}}" wx:key="nickname" wx:for-item="p"
+            class="slot-result-item" bindtap="selectSlotPartner" data-index="{{index}}">
+        <image wx:if="{{p.avatarUrl}}" src="{{p.avatarUrl}}" class="slot-result-av-img" mode="aspectFill" />
+        <view wx:else class="slot-result-av" style="background:{{p.avatarColor}}">{{p.initial}}</view>
+        <view class="slot-result-info">
+          <text class="slot-result-name">{{p.nickname}}</text>
+          <text class="slot-result-level" wx:if="{{p.levelLabel}}">{{p.levelLabel}}</text>
+        </view>
+        <text class="slot-result-chevron">›</text>
+      </view>
+    </scroll-view>
+
+    <!-- 无结果 -->
+    <view class="slot-result-empty" wx:elif="{{slotInput && slotSearchResults.length === 0}}">
+      <text>未找到匹配的球友</text>
+    </view>
+
+    <!-- 引导 -->
+    <view class="slot-result-hint" wx:else>
+      <text>输入昵称关键词搜索已注册球友</text>
+    </view>
+
+    <view class="slot-sheet-cancel-row">
+      <view class="slot-cancel-btn" bindtap="closeSlotSheet">取消</view>
+    </view>
+  </view>
+</view>

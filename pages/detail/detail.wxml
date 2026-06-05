@@ -1,0 +1,268 @@
+<view class="page" wx:if="{{post}}">
+
+  <view class="hero" style="{{post.heroStyle}}">
+    <view class="hero-top">
+      <view class="hero-status-pill">
+        <view class="{{post.heroStatusDotClass}}"></view>
+        {{post.gameStatus.label}}
+      </view>
+      <button class="share-btn" open-type="share">分享 📤</button>
+    </view>
+
+    <view class="hero-location">{{post.location}}</view>
+
+    <view class="hero-time-row">
+      <text class="hero-time-main">{{post.timeLabel}}</text>
+      <text class="hero-time-sub" wx:if="{{post.gameStatus.code !== 'in-progress' && post.gameStatus.code !== 'finished'}}">
+        {{post.dateLabel}} · {{post.time}}
+      </text>
+    </view>
+
+    <view class="hero-tags">
+      <view class="hero-tag" wx:if="{{post.levelInfo}}">{{post.levelInfo.full}}</view>
+      <view class="hero-tag" wx:if="{{post.courtLabel}}">{{post.courtLabel}}</view>
+      <view class="hero-tag" wx:if="{{post.matchLabel}}">{{post.matchLabel}}</view>
+      <view class="hero-tag" wx:if="{{post.indoor !== undefined}}">{{post.indoor ? '室内' : '室外'}}</view>
+      <view class="hero-tag hero-tag-fee" wx:if="{{post.feeLabel}}">{{post.feeLabel}}</view>
+    </view>
+
+    <view class="hero-footer">
+      <view class="hero-progress-wrap">
+        <view class="hero-progress-bar">
+          <view class="hero-progress-fill" style="width:{{post.fillPercent}}%"></view>
+        </view>
+        <text class="hero-progress-text">{{post.joined}}/{{post.need}} 人</text>
+      </view>
+      <text class="hero-organizer">{{post.nickname}} 发起</text>
+    </view>
+  </view>
+
+  <!-- ── 坑位状态（新格式球局）── -->
+  <view class="section" wx:if="{{hasSlots}}">
+    <view class="section-title">球局坑位</view>
+
+    <!-- 被预留者高亮提示 -->
+    <view class="invite-banner" wx:if="{{isReservedUser && !alreadyJoined}}">
+      <text class="invite-banner-icon">🎾</text>
+      <text class="invite-banner-txt">发起人已为你预留坑位，接受即可加入！</text>
+    </view>
+
+    <view class="card slots-card">
+      <view wx:for="{{displaySlots}}" wx:key="slotIndex" wx:for-item="s" class="slot-row">
+        <!-- CONFIRMED -->
+        <view wx:if="{{s.status === 'CONFIRMED'}}" class="slot-row-inner"
+              bindtap="goToPubProfile" data-name="{{s.nickname}}">
+          <image wx:if="{{s.avatarUrl}}" src="{{s.avatarUrl}}" class="slot-av-img" mode="aspectFill" />
+          <view wx:else class="slot-av slot-av-confirmed" style="background:{{s.avatarColor}}">{{s.initial}}</view>
+          <text class="slot-nick">{{s.nickname}}</text>
+          <view class="slot-badge slot-badge-confirmed">✓ 已确认</view>
+        </view>
+        <!-- RESERVED：我的坑（自己不跳自己主页）-->
+        <view wx:elif="{{s.isMySlot}}" class="slot-row-inner slot-row-mine">
+          <image wx:if="{{s.avatarUrl}}" src="{{s.avatarUrl}}" class="slot-av-img slot-av-img-mine" mode="aspectFill" />
+          <view wx:else class="slot-av slot-av-mine" style="background:{{s.avatarColor}}">{{s.initial}}</view>
+          <text class="slot-nick">{{s.nickname}}（你）</text>
+          <view class="slot-badge slot-badge-mine">待你确认</view>
+        </view>
+        <!-- RESERVED：他人坑 -->
+        <view wx:elif="{{s.status === 'RESERVED'}}" class="slot-row-inner"
+              bindtap="goToPubProfile" data-name="{{s.nickname}}">
+          <image wx:if="{{s.avatarUrl}}" src="{{s.avatarUrl}}" class="slot-av-img slot-av-img-reserved" mode="aspectFill" />
+          <view wx:else class="slot-av slot-av-reserved" style="background:{{s.avatarColor}}">{{s.initial}}</view>
+          <text class="slot-nick slot-nick-reserved">{{s.nickname}}</text>
+          <view class="slot-badge slot-badge-reserved">已预留</view>
+        </view>
+        <!-- OPEN -->
+        <view wx:else class="slot-row-inner slot-row-open">
+          <view class="slot-av slot-av-open">+</view>
+          <text class="slot-nick slot-nick-open">空位</text>
+          <view class="slot-badge slot-badge-open">可加入</view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 精彩瞬间 Gallery -->
+  <view class="section" wx:if="{{galleryPhotos.length > 0}}">
+    <view class="section-title">精彩瞬间</view>
+    <view class="gallery-wrap">
+      <scroll-view class="gallery-scroll" scroll-x>
+        <view class="gallery-row">
+          <image wx:for="{{galleryPhotos}}" wx:key="*this" wx:for-item="url"
+                 class="gallery-thumb" src="{{url}}" mode="aspectFill"
+                 bindtap="previewGallery" data-url="{{url}}" data-urls="{{galleryPhotos}}"/>
+        </view>
+      </scroll-view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{post.avatarsFull.length > 0}}">
+    <view class="section-title">球友们</view>
+    <view class="card">
+      <view class="avatars-big">
+        <view wx:for="{{post.avatarsFull}}" wx:key="index" wx:for-item="av" class="av-item"
+              bindtap="goToPubProfile" data-name="{{av.name}}">
+          <image wx:if="{{av.avatarUrl}}" src="{{av.avatarUrl}}" class="av-circle-img" mode="aspectFill" />
+          <view wx:else class="av-circle" style="background:{{av.color}}">{{av.initial}}</view>
+          <text class="av-name">{{av.name}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{alreadyJoined && post.contactInfo}}">
+    <view class="section-title">联系方式</view>
+    <view class="card contact-card">
+      <text class="contact-icon">💬</text>
+      <text class="contact-text">{{post.contactInfo}}</text>
+    </view>
+  </view>
+
+  <view class="section" wx:if="{{post.note}}">
+    <view class="section-title">备注</view>
+    <view class="card note-text">{{post.note}}</view>
+  </view>
+
+</view>
+
+<!-- ── 底部栏 ── -->
+<view class="bottom-bar" wx:if="{{post}}">
+
+  <!-- 已取消 -->
+  <view class="bottom-tip" wx:if="{{post.cancelled}}">球局已取消</view>
+
+  <!-- 进行中 -->
+  <view class="bottom-live" wx:elif="{{post.gameStatus.code === 'in-progress'}}">
+
+    <!-- 参与者操作行（创建者 or 已加入）-->
+    <view class="live-participant-actions" wx:if="{{isParticipant}}">
+      <view class="live-act-btn live-act-photo" bindtap="quickUpload">
+        <text class="live-act-icon">📷</text>
+        <text class="live-act-txt">上传现场</text>
+      </view>
+      <view class="live-act-btn live-act-score" bindtap="openScoreSheet">
+        <text class="live-act-icon">🔢</text>
+        <text class="live-act-txt">更新局分</text>
+      </view>
+    </view>
+
+    <!-- 创建者视角：开关 + 进入记分 -->
+    <view wx:if="{{isCreator}}" class="live-creator-row">
+      <view class="live-recruit-wrap">
+        <view class="live-recruit-texts">
+          <text class="live-recruit-title">开放空降</text>
+          <text class="live-recruit-sub">{{post.liveSubLabel || '缺人中'}}</text>
+        </view>
+        <switch checked="{{post.recruitingOpen !== false}}" bindchange="toggleRecruiting"
+                color="#A6FF33" style="transform:scale(0.85)" />
+      </view>
+      <view class="tm-enter-btn" bindtap="enterTennisMode">
+        <text class="tm-enter-txt">进入实况记分 →</text>
+      </view>
+    </view>
+
+    <!-- 非创建者视角 -->
+    <view wx:else class="live-joiner-row">
+      <!-- 已在阵中 -->
+      <view wx:if="{{alreadyJoined}}" class="live-already-row">
+        <text class="live-already-txt">✅ 已在阵中</text>
+        <view class="tm-enter-btn" bindtap="enterTennisMode">
+          <text class="tm-enter-txt">进入实况记分 →</text>
+        </view>
+      </view>
+      <!-- 可空降加入 -->
+      <view wx:elif="{{post.liveJoinable}}" class="live-join-cta">
+        <view class="live-join-info">
+          <text class="live-join-title">球局缺人，立即空降</text>
+          <text class="live-join-sub">{{post.joined}}/{{post.need}} 人 · 现在加入即可上场</text>
+        </view>
+        <view class="live-board-btn" bindtap="join">上车 →</view>
+      </view>
+      <!-- 已关闭或已满 -->
+      <view wx:else class="live-closed-row">
+        <text class="live-closed-txt">
+          {{post.liveSubLabel === '已满员' ? '球局已满员 👥' : '创建者已关闭招募 🔒'}}
+        </text>
+      </view>
+    </view>
+
+  </view>
+
+  <!-- 已结束 -->
+  <view class="bottom-finished" wx:elif="{{post.gameStatus.code === 'finished'}}">
+    <view class="finished-main">这场已经结束啦 ✅</view>
+    <view class="finished-actions">
+      <button class="poster-btn" bindtap="generatePoster">生成打卡海报 📸</button>
+      <button class="finished-btn" bindtap="goIndex">找下一场 →</button>
+    </view>
+  </view>
+
+  <!-- 发起人（非进行中状态）-->
+  <view class="bottom-creator-row" wx:elif="{{isCreator}}">
+    <view class="creator-label">🎾 你发起的球局</view>
+    <button class="cancel-game-btn" bindtap="cancelGame">取消球局</button>
+  </view>
+
+  <!-- 已加入（非发起人）-->
+  <view class="bottom-joined" wx:elif="{{alreadyJoined}}">
+    <view class="joined-label">✅ 已加入球局</view>
+    <button class="cancel-btn" bindtap="cancelJoin">退出</button>
+  </view>
+
+  <!-- 被预留的球友（未接受）：接受 / 婉拒 -->
+  <view class="bottom-invite-row" wx:elif="{{isReservedUser}}">
+    <button class="reject-btn" bindtap="rejectInvite">婉拒并释放 ✕</button>
+    <button class="accept-btn" bindtap="acceptInvite">接受邀请 ✓</button>
+  </view>
+
+  <!-- 坑位全被预留，普通用户无法加入 -->
+  <view class="bottom-tip" wx:elif="{{hasSlots && !hasOpenSlot}}">
+    坑位已被好友预留，若对方放弃将自动公开 🔒
+  </view>
+
+  <!-- 候补 -->
+  <view class="bottom-tip" wx:elif="{{post.gameStatus.code === 'full'}}">
+    球友已经组满啦 👥
+  </view>
+
+  <!-- 可加入（招募中 / 即将开打） -->
+  <view class="bottom-row" wx:else>
+    <input class="bottom-input" placeholder="你的昵称" value="{{myName}}" bindinput="onNameInput" />
+    <button class="{{post.bottomBtnClass}}" bindtap="join" disabled="{{joining}}">{{joining ? '加入中' : post.bottomBtnText}}</button>
+  </view>
+
+</view>
+
+<!-- 局分更新浮层 -->
+<view class="score-overlay" wx:if="{{showScoreSheet}}" bindtap="closeScoreSheet">
+  <view class="score-sheet" catchtap="noop">
+    <view class="ss-handle"></view>
+    <view class="ss-title">🔢 更新局分</view>
+    <view class="ss-score-row">
+      <view class="ss-side">
+        <text class="ss-side-label">我方</text>
+        <view class="ss-ctrl">
+          <view class="ss-sub" bindtap="subQuickA">−</view>
+          <text class="ss-num">{{quickScoreA}}</text>
+          <view class="ss-add" bindtap="addQuickA">+</view>
+        </view>
+      </view>
+      <text class="ss-colon">:</text>
+      <view class="ss-side">
+        <text class="ss-side-label">对方</text>
+        <view class="ss-ctrl">
+          <view class="ss-sub" bindtap="subQuickB">−</view>
+          <text class="ss-num">{{quickScoreB}}</text>
+          <view class="ss-add" bindtap="addQuickB">+</view>
+        </view>
+      </view>
+    </view>
+    <view class="ss-set-row">
+      <text class="ss-set-txt">第 {{quickScoreSet}} 盘</text>
+      <view class="ss-set-next" bindtap="upQuickSet">换盘 →</view>
+    </view>
+    <view class="ss-confirm" bindtap="confirmScore">确认更新</view>
+  </view>
+</view>
+
+<canvas id="posterCanvas" type="2d" style="position:fixed;left:-2000px;top:0;width:375px;height:660px;"></canvas>

@@ -1,0 +1,192 @@
+<view class="page">
+
+  <!-- ── Header ── -->
+  <view class="feed-hd">
+    <text class="feed-hd-title">动态</text>
+    <text class="feed-hd-sub">TennisF 运动社区</text>
+  </view>
+
+  <!-- ── Loading skeleton ── -->
+  <view class="skeleton-wrap" wx:if="{{loading}}">
+    <view class="sk-card" wx:for="{{[1,2,3]}}" wx:key="*this">
+      <view class="sk-hd">
+        <view class="sk-av"></view>
+        <view class="sk-lines">
+          <view class="sk-line sk-ln-lg"></view>
+          <view class="sk-line sk-ln-sm"></view>
+        </view>
+      </view>
+      <view class="sk-img"></view>
+      <view class="sk-ft">
+        <view class="sk-line sk-ln-sm"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ── Empty state ── -->
+  <view class="feed-empty" wx:elif="{{!loading && feedItems.length === 0}}">
+    <text class="feed-empty-ico">🎾</text>
+    <text class="feed-empty-title">还没有动态</text>
+    <text class="feed-empty-sub">打球时上传照片，运动瞬间留在这里</text>
+  </view>
+
+  <!-- ── Feed list ── -->
+  <view wx:else>
+    <block wx:for="{{feedItems}}" wx:key="id" wx:for-item="item" wx:for-index="fi">
+
+      <!-- ★ 图片 / 视频 动态 ★ -->
+      <view wx:if="{{item.type === 'photo' || item.type === 'video'}}" class="fi">
+
+        <!-- 作者行 -->
+        <view class="fi-hd">
+          <view class="fi-av" style="background:{{item.avatarColor}}"
+                bindtap="goAuthor" data-name="{{item.author}}">{{item.avatarInitial}}</view>
+          <view class="fi-hd-info">
+            <text class="fi-author" bindtap="goAuthor" data-name="{{item.author}}">{{item.author}}</text>
+            <view class="fi-hd-meta">
+              <text class="fi-time">{{item.timeAgo}}</text>
+              <text class="fi-loc" wx:if="{{item.location}}"> · 📍 {{item.location}}</text>
+              <text class="fi-match" wx:if="{{item.matchType}}"> · {{item.matchType}}</text>
+            </view>
+          </view>
+        </view>
+
+        <!-- 文字内容 -->
+        <text class="fi-text" wx:if="{{item.content}}">{{item.content}}</text>
+
+        <!-- 图片九宫格 -->
+        <view wx:if="{{item.hasImages}}" class="fi-imgs {{item.gridClass}}">
+          <view wx:for="{{item.imagesDisplay}}" wx:key="*this" wx:for-item="imgUrl" wx:for-index="ii"
+                class="fi-img-cell"
+                catchtap="previewImages" data-urls="{{item.images}}" data-current="{{imgUrl}}">
+            <image src="{{imgUrl}}" class="fi-img" mode="aspectFill" />
+            <view wx:if="{{ii === 8 && item.imgMore > 0}}" class="fi-img-more">+{{item.imgMore}}</view>
+          </view>
+        </view>
+
+        <!-- 视频封面 -->
+        <view wx:if="{{item.hasVideo}}" class="fi-video" bindtap="goDetail" data-post-id="{{item.postId}}">
+          <image wx:if="{{item.videoCover}}" src="{{item.videoCover}}" class="fi-video-cover" mode="aspectFill" />
+          <view wx:else class="fi-video-ph">
+            <text class="fi-video-ph-ico">🎬</text>
+          </view>
+          <view class="fi-video-play">▶</view>
+        </view>
+
+        <!-- 互动栏 -->
+        <view class="fi-actions">
+          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
+            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
+            <text class="fi-act-cnt">{{item.likeCount > 0 ? item.likeCount : '点赞'}}</text>
+          </view>
+          <view class="fi-act" bindtap="openCommentSheet" data-id="{{item.id}}">
+            <text class="fi-act-ico">💬</text>
+            <text class="fi-act-cnt">{{item.commentCount > 0 ? item.commentCount : '评论'}}</text>
+          </view>
+          <view class="fi-act fi-act-link" bindtap="goDetail" data-post-id="{{item.postId}}" wx:if="{{item.postId}}">
+            <text class="fi-act-ico">🎾</text>
+            <text class="fi-act-cnt">球局</text>
+          </view>
+        </view>
+
+      </view>
+
+      <!-- ★ 连续打卡 高亮动态 ★ -->
+      <view wx:elif="{{item.type === 'streak'}}" class="fi fi-hl">
+        <view class="fi-hl-inner">
+          <view class="fi-hl-flame">🔥</view>
+          <view class="fi-hl-body">
+            <text class="fi-hl-title">{{item.hlTitle}}</text>
+            <text class="fi-hl-sub">{{item.streakDays >= 7 ? '超级球手 · ' : ''}}{{item.timeAgo}}</text>
+          </view>
+          <view class="fi-hl-streak-badge">{{item.streakDays}}天</view>
+        </view>
+        <view class="fi-actions fi-actions-hl">
+          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
+            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
+            <text class="fi-act-cnt fi-act-cnt-hl">{{item.likeCount > 0 ? item.likeCount : '为TA加油'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ★ 成就解锁 高亮动态 ★ -->
+      <view wx:elif="{{item.type === 'achievement'}}" class="fi fi-hl fi-hl-achiev">
+        <view class="fi-hl-inner">
+          <view class="fi-hl-achiev-icon">{{item.achievIcon}}</view>
+          <view class="fi-hl-body">
+            <text class="fi-hl-title">{{item.hlTitle}}</text>
+            <text class="fi-hl-sub">{{item.author}} · {{item.timeAgo}}</text>
+          </view>
+          <view class="fi-hl-badge-gold">NEW</view>
+        </view>
+        <view class="fi-actions fi-actions-hl">
+          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
+            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
+            <text class="fi-act-cnt fi-act-cnt-hl">{{item.likeCount > 0 ? item.likeCount : '恭喜TA'}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- ★ 搭子动态 ★ -->
+      <view wx:elif="{{item.type === 'partner'}}" class="fi fi-partner">
+        <view class="fi-partner-inner">
+          <view class="fi-partner-avs">
+            <view class="fi-av" style="background:{{item.avatarColor}}">{{item.avatarInitial}}</view>
+            <text class="fi-partner-x">🤝</text>
+            <view class="fi-av" style="background:{{item.partnerColor}}">{{item.partnerInitial}}</view>
+          </view>
+          <view class="fi-partner-info">
+            <text class="fi-partner-title">{{item.author}} × {{item.partnerName}}</text>
+            <text class="fi-partner-sub">{{item.partnerDesc}}</text>
+          </view>
+        </view>
+      </view>
+
+    </block>
+
+    <!-- 加载更多 / 结束 -->
+    <view class="fi-footer">
+      <view class="fi-loading-more" wx:if="{{loadingMore}}">
+        <view class="fi-spin"></view>
+        <text class="fi-loading-txt">加载更多</text>
+      </view>
+      <text class="fi-no-more" wx:elif="{{!hasMore && feedItems.length > 0}}">— 已加载全部动态 —</text>
+    </view>
+  </view>
+
+</view>
+
+<!-- ── 评论 Sheet ── -->
+<view class="sheet-overlay" wx:if="{{commentSheetOpen}}" bindtap="closeCommentSheet">
+  <view class="comment-sheet" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="sheet-title">
+      <text>评论</text>
+      <text wx:if="{{activeItem && activeItem.commentCount > 0}}" class="sheet-title-cnt"> {{activeItem.commentCount}}</text>
+    </view>
+
+    <!-- 评论列表 -->
+    <view class="comment-loading-row" wx:if="{{commentsLoading}}">
+      <view class="fi-spin"></view>
+    </view>
+    <scroll-view class="comment-list" scroll-y wx:elif="{{comments.length > 0}}">
+      <view wx:for="{{comments}}" wx:key="id" wx:for-item="c" class="cmt-item">
+        <view class="cmt-av" style="background:{{c.avatarColor}}">{{c.avatarInitial}}</view>
+        <view class="cmt-body">
+          <text class="cmt-author">{{c.author}}</text>
+          <text class="cmt-text">{{c.content}}</text>
+          <text class="cmt-time">{{c.timeAgo}}</text>
+        </view>
+      </view>
+    </scroll-view>
+    <view class="comment-empty" wx:elif="{{!commentsLoading}}">来说第一句话 👋</view>
+
+    <!-- 输入行 -->
+    <view class="cmt-input-row">
+      <input class="cmt-input" placeholder="说点什么..." value="{{commentInput}}"
+             bindinput="onCommentInput" confirm-type="send" bindconfirm="submitComment"
+             focus="{{commentSheetOpen}}" />
+      <view class="cmt-send {{commentInput ? 'cmt-send-on' : ''}}" bindtap="submitComment">发送</view>
+    </view>
+  </view>
+</view>

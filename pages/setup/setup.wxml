@@ -1,0 +1,130 @@
+<view class="page">
+
+  <view class="hero-bg">
+    <view class="court-v"></view>
+    <view class="court-h"></view>
+    <view class="hero-glow"></view>
+    <view class="hero-title">{{isEdit ? '编辑球员档案' : '创建球员档案'}}</view>
+    <view class="hero-sub">{{isEdit ? '更新你的球员信息' : '建立你在 TennisF 的球员身份'}}</view>
+
+    <!-- 头像选择 -->
+    <view class="avatar-section">
+      <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <image wx:if="{{tempAvatarUrl || avatarUrl}}"
+          src="{{tempAvatarUrl || avatarUrl}}"
+          class="avatar-img" mode="aspectFill" />
+        <view wx:else class="avatar-placeholder">
+          <text class="avatar-icon">📷</text>
+          <text class="avatar-hint">选择头像</text>
+        </view>
+      </button>
+      <view class="avatar-tip">点击选择微信头像</view>
+    </view>
+  </view>
+
+  <view class="body">
+
+    <!-- 昵称 -->
+    <view class="section">
+      <view class="section-label">球员昵称</view>
+      <view class="input-card">
+        <input type="nickname" class="input"
+          placeholder="你在 TennisF 的名字"
+          value="{{nickname}}"
+          bindinput="onNicknameInput" />
+      </view>
+      <view class="input-tip">支持使用微信昵称，可自定义</view>
+    </view>
+
+    <!-- 水平 -->
+    <view class="section">
+      <view class="section-label">网球水平</view>
+      <view class="level-cards">
+        <view class="level-card {{level === 'beginner' ? 'level-card-active' : ''}}"
+          bindtap="selectLevel" data-value="beginner">
+          <text class="level-emoji">🌱</text>
+          <text class="level-name">新手</text>
+          <text class="level-range">2.0 - 2.5</text>
+        </view>
+        <view class="level-card {{level === 'intermediate' ? 'level-card-active' : ''}}"
+          bindtap="selectLevel" data-value="intermediate">
+          <text class="level-emoji">⚡</text>
+          <text class="level-name">进阶</text>
+          <text class="level-range">3.0 - 3.5</text>
+        </view>
+        <view class="level-card {{level === 'advanced' ? 'level-card-active' : ''}}"
+          bindtap="selectLevel" data-value="advanced">
+          <text class="level-emoji">🏆</text>
+          <text class="level-name">竞技</text>
+          <text class="level-range">4.0+</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 可选信息展开 -->
+    <view class="optional-toggle" bindtap="toggleOptional">
+      <text class="optional-toggle-text">{{showOptional ? '收起详细信息' : '完善更多信息（可选）'}}</text>
+      <text class="optional-arrow">{{showOptional ? '↑' : '↓'}}</text>
+    </view>
+
+    <view wx:if="{{showOptional}}">
+
+      <!-- 常驻球场 -->
+      <view class="section">
+        <view class="section-label">常驻球场</view>
+        <view class="input-card">
+          <text class="input-prefix">📍</text>
+          <input class="input" placeholder="最常去的球场" value="{{homeBase}}" bindinput="onHomeBaseInput" />
+        </view>
+      </view>
+
+      <!-- 偏好打法 -->
+      <view class="section">
+        <view class="section-label">偏好形式</view>
+        <view class="chips-row">
+          <view wx:for="{{matchOptions}}" wx:key="index"
+            class="chip {{item.selected ? 'chip-active' : ''}}"
+            bindtap="selectMatchType" data-value="{{item.value}}">{{item.label}}</view>
+        </view>
+      </view>
+
+      <!-- 场地偏好 -->
+      <view class="section">
+        <view class="section-label">场地偏好</view>
+        <view class="chips-row">
+          <view wx:for="{{courtTypeOptions}}" wx:key="index"
+            class="chip {{item.selected ? 'chip-active' : ''}}"
+            bindtap="selectCourtType" data-value="{{item.value}}">{{item.label}}</view>
+        </view>
+      </view>
+
+      <!-- 打球风格 -->
+      <view class="section">
+        <view class="section-label">打球风格</view>
+        <view class="style-grid">
+          <view wx:for="{{styleOptions}}" wx:key="value"
+            class="style-card {{playStyle === item.value ? 'style-card-active' : ''}}"
+            bindtap="selectStyle" data-value="{{item.value}}">
+            <text class="style-name">{{item.label}}</text>
+            <text class="style-desc">{{item.desc}}</text>
+          </view>
+        </view>
+      </view>
+
+      <!-- 个性签名 -->
+      <view class="section">
+        <view class="section-label">个性签名 <text class="optional-label">选填</text></view>
+        <view class="textarea-card">
+          <textarea class="textarea" placeholder="说说你打球的故事..."
+            value="{{bio}}" bindinput="onBioInput" auto-height />
+        </view>
+      </view>
+
+    </view>
+
+    <button class="save-btn" bindtap="save" disabled="{{saving}}">
+      {{saving ? '保存中...' : isEdit ? '保存修改' : '完成设置 →'}}
+    </button>
+
+  </view>
+</view>

@@ -1,0 +1,146 @@
+<view class="tm-page">
+
+  <!-- ── Header ── -->
+  <view class="tm-header" style="padding-top:{{statusBarHeight}}px">
+    <view class="tm-nav">
+      <view class="tm-back" bindtap="goBack">
+        <text class="tm-back-ch">‹</text>
+      </view>
+      <view class="tm-live-badge">
+        <view class="tm-pulse-dot"></view>
+        <text class="tm-badge-txt">Tennis Mode</text>
+      </view>
+      <view class="tm-nav-placeholder"></view>
+    </view>
+
+    <view class="tm-venue">{{post.location}}</view>
+
+    <view class="tm-meta-row">
+      <text class="tm-elapsed">已打 {{elapsedLabel}}</text>
+      <text class="tm-meta-sep">·</text>
+      <text class="tm-status-txt">正在进行</text>
+    </view>
+
+    <view class="tm-players-row" wx:if="{{joinersLabel}}">
+      <text class="tm-players-label">{{joinersLabel}}</text>
+    </view>
+  </view>
+
+  <!-- ── Scroll Body ── -->
+  <scroll-view class="tm-scroll" scroll-y>
+
+    <!-- Score Card -->
+    <view class="tm-score-card">
+      <view class="tm-set-label">第 {{currentSet}} 盘{{tiebreak ? '  ·  抢七' : ''}}</view>
+
+      <!-- 历史盘分 -->
+      <view class="tm-set-history" wx:if="{{setScores.length > 0}}">
+        <view wx:for="{{setScores}}" wx:key="set" wx:for-item="ss" class="tm-set-hist-item">
+          <text class="tm-set-hist-score">{{ss.a}}:{{ss.b}}</text>
+          <text class="tm-set-hist-lbl">第{{ss.set}}盘</text>
+        </view>
+      </view>
+
+      <view class="tm-score-row">
+        <view class="tm-score-col">
+          <view class="tm-team-name">{{teamALabel}}</view>
+          <view class="tm-score-num tm-score-a">{{scoreA}}</view>
+          <view class="tm-ctrl-row" wx:if="{{canControl}}">
+            <view class="tm-btn-minus" bindtap="subA">−</view>
+            <view class="tm-btn-plus" bindtap="addA">+</view>
+          </view>
+        </view>
+
+        <view class="tm-colon">:</view>
+
+        <view class="tm-score-col">
+          <view class="tm-team-name">{{teamBLabel}}</view>
+          <view class="tm-score-num tm-score-b">{{scoreB}}</view>
+          <view class="tm-ctrl-row" wx:if="{{canControl}}">
+            <view class="tm-btn-minus" bindtap="subB">−</view>
+            <view class="tm-btn-plus" bindtap="addB">+</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="tm-set-actions" wx:if="{{canControl}}">
+        <view class="tm-set-btn {{tiebreak ? 'tm-set-btn-active' : ''}}" bindtap="toggleTiebreak">
+          {{tiebreak ? '✓ 抢七中' : '进入抢七'}}
+        </view>
+        <view class="tm-set-btn {{canNextSet && !tiebreak ? 'tm-set-btn-suggest' : ''}}" bindtap="newSet">下一盘 →</view>
+      </view>
+    </view>
+
+    <!-- Moments Feed -->
+    <view class="tm-feed">
+      <view class="tm-feed-hd">
+        <text class="tm-feed-ttl">球局动态</text>
+        <text class="tm-feed-cnt" wx:if="{{moments.length > 0}}">{{moments.length}} 条</text>
+      </view>
+
+      <view class="tm-feed-empty" wx:if="{{moments.length === 0}}">
+        <text class="tm-empty-icon">🎾</text>
+        <text class="tm-empty-tip">记录今天每一个精彩时刻</text>
+      </view>
+
+      <view wx:for="{{moments}}" wx:key="id" wx:for-item="m" class="tm-moment">
+        <view class="tm-moment-left">
+          <view class="tm-dot {{m.nodeClass}}"></view>
+          <view class="tm-timeline-line" wx:if="{{index < moments.length - 1}}"></view>
+        </view>
+        <view class="tm-moment-card">
+          <view class="tm-mc-hd">
+            <text class="tm-mc-emoji">{{m.emoji}}</text>
+            <text class="tm-mc-author">{{m.author}}</text>
+            <text class="tm-mc-ago">{{m.agoLabel}}</text>
+          </view>
+          <text class="tm-mc-text" wx:if="{{m.content}}">{{m.content}}</text>
+          <view class="tm-mc-imgs" wx:if="{{m.imageUrls.length > 0}}">
+            <image wx:for="{{m.imageUrls}}" wx:key="*this" wx:for-item="u"
+                   src="{{u}}" mode="aspectFill" class="tm-mc-img"
+                   bindtap="previewImg" data-url="{{u}}" data-urls="{{m.imageUrls}}"/>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="tm-scroll-end" style="height:{{canControl ? 220 : 40}}rpx"></view>
+  </scroll-view>
+
+  <!-- ── Bottom Bar（仅参与者可见）── -->
+  <view class="tm-bottom" wx:if="{{canControl}}">
+    <view class="tm-action-group">
+      <view class="tm-action" bindtap="choosePhoto">
+        <text class="tm-act-icon">📸</text>
+        <text class="tm-act-txt">照片</text>
+      </view>
+      <view class="tm-action" bindtap="showTextInput">
+        <text class="tm-act-icon">✍️</text>
+        <text class="tm-act-txt">状态</text>
+      </view>
+      <view class="tm-action" bindtap="logScoreEvent">
+        <text class="tm-act-icon">🎾</text>
+        <text class="tm-act-txt">记录比分</text>
+      </view>
+    </view>
+    <view class="tm-end-btn" bindtap="endSession">结束 →</view>
+  </view>
+
+  <!-- 旁观者提示 -->
+  <view class="tm-spectator-hint" wx:if="{{!canControl}}">旁观模式 · 比分实时同步</view>
+
+  <!-- ── Text Input Sheet ── -->
+  <view class="tm-overlay" wx:if="{{showInput}}" bindtap="cancelInput">
+    <view class="tm-sheet" catchtap="noop">
+      <view class="tm-sheet-title">发个状态 ✍️</view>
+      <textarea class="tm-sheet-ta" value="{{inputText}}" bindinput="onInput"
+                placeholder="今晚怎么样？打出好球了吗？" maxlength="120" auto-focus
+                placeholder-style="color:rgba(255,255,255,0.28);font-size:28rpx"/>
+      <view class="tm-sheet-btns">
+        <view class="tm-sheet-cancel" bindtap="cancelInput">取消</view>
+        <view class="tm-sheet-post" bindtap="postText">发布</view>
+      </view>
+    </view>
+  </view>
+
+</view>
