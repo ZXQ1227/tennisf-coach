@@ -31,13 +31,31 @@
 
 .greeting { font-size: 28rpx; color: #999; margin-bottom: 10rpx; }
 
+.header-main-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 18rpx;
+}
+
 .question {
   font-size: 50rpx;
   font-weight: 800;
   color: #1A1A1A;
   letter-spacing: -1rpx;
   line-height: 1.2;
-  margin-bottom: 18rpx;
+  flex: 1;
+}
+
+.header-cta {
+  flex-shrink: 0;
+  background: #A6FF33;
+  color: #0E231A;
+  font-size: 26rpx;
+  font-weight: 800;
+  padding: 18rpx 28rpx;
+  border-radius: 100rpx;
+  letter-spacing: 0.5rpx;
 }
 
 /* Live Banner */
@@ -49,7 +67,8 @@
   border: 1.5rpx solid rgba(43,182,115,0.28);
   border-radius: 20rpx;
   padding: 16rpx 24rpx;
-  margin-bottom: 4rpx;
+  margin-top: 16rpx;
+  margin-bottom: 16rpx;
 }
 
 .live-banner-dot {
@@ -67,30 +86,35 @@
 .active-hint { font-size: 26rpx; color: #2BB673; font-weight: 600; }
 .active-hint.empty { color: #CCC; }
 
-/* ── Filter Bar ── */
+/* ── Filter Pills ── */
 .filter-bar {
   display: flex;
   white-space: nowrap;
-  margin: 0 -32rpx 28rpx;
+  margin: 0 -32rpx 20rpx;
   padding: 0 32rpx;
 }
 
 .filter-chip {
   display: inline-flex;
   align-items: center;
-  padding: 14rpx 28rpx;
+  padding: 9rpx 20rpx;
   border-radius: 100rpx;
-  font-size: 26rpx;
+  font-size: 22rpx;
   font-weight: 500;
-  color: #888;
-  background: #FFFFFF;
-  border: 2rpx solid #EEEEEE;
-  margin-right: 14rpx;
+  color: #AAAAAA;
+  background: transparent;
+  border: 1.5rpx solid transparent;
+  margin-right: 10rpx;
   white-space: nowrap;
   flex-shrink: 0;
 }
 
-.filter-chip-active { background: #1A1A1A; color: #FFFFFF; border-color: #1A1A1A; }
+.filter-chip-active {
+  background: #F0F0F0;
+  color: #1A1A1A;
+  font-weight: 700;
+  border-color: transparent;
+}
 
 /* ── Empty ── */
 .empty-wrap {
@@ -601,4 +625,27 @@
   font-size: 22rpx;
   color: rgba(0,0,0,0.25);
   letter-spacing: 2rpx;
+}
+
+.create-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: linear-gradient(135deg, #0E231A 0%, #1A3D2B 100%);
+  border-radius: 28rpx;
+  padding: 32rpx 36rpx;
+  margin: 0 4rpx;
+}
+.create-card-left { flex: 1; }
+.create-card-title { display: block; font-size: 28rpx; font-weight: 700; color: #FFFFFF; margin-bottom: 8rpx; }
+.create-card-sub { display: block; font-size: 22rpx; color: rgba(255,255,255,0.5); }
+.create-card-btn {
+  flex-shrink: 0;
+  background: #A6FF33;
+  color: #0E231A;
+  font-size: 24rpx;
+  font-weight: 800;
+  padding: 16rpx 28rpx;
+  border-radius: 100rpx;
+  margin-left: 24rpx;
 }

@@ -201,6 +201,13 @@ Page({
     wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id })
   },
 
+  goPost: function() {
+    var app = getApp()
+    app.requireProfile(function() {
+      wx.navigateTo({ url: '/pages/post/post' })
+    })
+  },
+
   goLive: function() {
     var posts = this.data.posts || []
     var livePost = null

@@ -3,7 +3,10 @@
   <!-- ── Header ── -->
   <view class="header">
     <view class="greeting">Hi, {{nickname || '球友'}} 👋</view>
-    <view class="question">今晚想打球吗？</view>
+    <view class="header-main-row">
+      <view class="question">今晚想打球吗？</view>
+      <view class="header-cta" bindtap="goPost">🎾 组个新局</view>
+    </view>
 
     <!-- 有进行中球局时：Live Banner -->
     <view class="live-banner" wx:if="{{ongoingCount > 0}}" bindtap="goLive">
@@ -16,7 +19,7 @@
   </view>
 
   <!-- ── Filter Bar ── -->
-  <scroll-view class="filter-bar" scroll-x enable-flex>
+  <scroll-view class="filter-bar" scroll-x enable-flex wx:if="{{false}}">
     <view wx:for="{{filters}}" wx:key="value"
           class="filter-chip {{activeFilter === item.value ? 'filter-chip-active' : ''}}"
           bindtap="onFilterTap" data-filter="{{item.value}}">{{item.label}}</view>
@@ -42,7 +45,7 @@
           <text>正在激战</text>
           <text class="lc-sub-badge" style="color:{{post.liveSubColor || '#A6FF33'}}"> · {{post.liveSubLabel || '缺人中'}}</text>
         </view>
-        <text class="lc-elapsed">{{post.timeLabel}}</text>
+        <text class="lc-elapsed">已打 {{post.timeLabel}}</text>
       </view>
 
       <!-- 场地名 -->
@@ -161,7 +164,13 @@
       <view class="load-spin"></view>
       <text class="load-more-txt">加载更多...</text>
     </view>
-    <text wx:elif="{{!hasMore}}" class="no-more-txt">— 已加载全部球局 —</text>
+    <view wx:elif="{{!hasMore}}" class="create-card" bindtap="goPost">
+      <view class="create-card-left">
+        <text class="create-card-title">没有找到合适的局？</text>
+        <text class="create-card-sub">发起你的专属球局，等球友来加入</text>
+      </view>
+      <view class="create-card-btn">发起 →</view>
+    </view>
   </view>
 
   <!-- 局分更新浮层 -->

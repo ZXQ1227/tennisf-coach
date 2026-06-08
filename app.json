@@ -25,7 +25,6 @@
     "list": [
       { "pagePath": "pages/index/index", "text": "约球" },
       { "pagePath": "pages/feed/feed", "text": "动态" },
-      { "pagePath": "pages/post/post", "text": "发起" },
       { "pagePath": "pages/profile/profile", "text": "我的" }
     ]
   },

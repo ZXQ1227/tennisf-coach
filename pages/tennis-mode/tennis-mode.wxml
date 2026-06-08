@@ -104,7 +104,7 @@
       </view>
     </view>
 
-    <view class="tm-scroll-end" style="height:{{canControl ? 220 : 40}}rpx"></view>
+    <view class="tm-scroll-end" style="height:{{canControl ? 280 : 60}}rpx"></view>
   </scroll-view>
 
   <!-- ── Bottom Bar（仅参与者可见）── -->

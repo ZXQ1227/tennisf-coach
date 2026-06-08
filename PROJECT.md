@@ -17,6 +17,7 @@
 | 0.0.7 | 2026-06-05 | pub-profile 重构：HeaderCard+StatsCard+BadgeCard+FixedBottomCTA，新增 getPublicProfile 云函数 |
 | 0.0.8 | 2026-06-05 | 今日球报页（game-report）、index 分页（PAGE_SIZE=25，onReachBottom）、头像上传确认完整 |
 | 0.0.9 | 2026-06-05 | profile 主页社区化重设计（Hero 双向光晕、动态 Feed、本周节奏、球搭子关系称号）、pub-profile 适合一起打卡片、修复发起人退出 Bug、补全取消球局入口 |
+| 0.1.0 | 2026-06-08 | 首页 UI/逻辑修复 9 项、Tennis Mode 穿透 & 对比度修复、动态页发布者头像接入 players 集合 |
 
 ---
 
@@ -502,6 +503,40 @@ if (event && event.nickname) {
 
 ---
 
+## 0.1.0 修复与迭代记录（2026-06-08）
+
+### 首页（index）UI & 逻辑修复
+
+| 文件 | 问题 | 修复 |
+|------|------|------|
+| `index.wxml` | Filter Tab（全部/新手友好/进阶局/竞技局）视觉上容易被误解为已禁用 | 整行加 `wx:if="{{false}}"` 隐藏，JS 逻辑保留 |
+| `index.wxss` | Live Banner 上下无间距，与相邻元素视觉拥挤 | 加 `margin-top: 16rpx` / `margin-bottom: 16rpx` |
+| `app.js` `computeTimeLabel` | in-progress 返回 `'已打 11 分钟'`，WXML 曾出现"已打 已打 11 分钟"双重拼接 | 改为只返回 `'11 分钟'`，WXML `lc-elapsed` 明确写 `已打 {{post.timeLabel}}`，前缀唯一化 |
+| `app.js` `processPost` | 双打球局 `need=2`，显示"2/2 已满员"（应为至少 4 人） | `matchType === 'doubles' && need < 4` 时自动修正 `need = 4` |
+| `app.js` `processPost` | in-progress 球局 `joined=0`，Live Card 显示"0/4 人" | `joined===0` 时 fallback 到 `joiners.length \|\| 1` |
+| `app.js` `processPost` | `Object.assign({}, p)` 后 `result.joined/need` 仍是原始 DB 值，模板取不到修正后数据 | 显式写入 `result.joined = joined` / `result.need = need` |
+
+### Tennis Mode（tennis-mode）修复
+
+| 文件 | 问题 | 修复 |
+|------|------|------|
+| `tennis-mode.wxss` | 底部栏背景不够不透明，内容滚到底时时间轴点/线视觉穿透 | `background` 改 `rgba(9,22,16,0.96)`，加 `backdrop-filter: blur(12px)` + `box-shadow: 0 -20rpx 40rpx 8rpx #091610` |
+| `tennis-mode.wxml` | scroll-end spacer 不足，全面屏下内容贴近底部栏 | `canControl` 时 spacer 高度 `220 → 280rpx` |
+| `tennis-mode.wxss` | 深绿背景上辅助信息（"正在进行"、发起人姓名）颜色过暗，户外弱可读 | `.tm-status-txt` / `.tm-players-label` 透明度 `0.55/0.62 → 0.72` |
+| `tennis-mode.js` `addMoment` | `loadMoments` 定时器与 `addMoment` 竞态，可能导致同条动态重复渲染 | DB 写入后检查 `alreadyIn`，已存在则不再 prepend |
+
+### 动态页（feed）头像接入
+
+| 文件 | 变更 |
+|------|------|
+| `feed.js` `loadFeed` | `rawMoments.map` 后，提取本页所有唯一 author，一次 `players.where({ nickname: _.in([...]) })` 批量拉取 avatarUrl，merge 回 items；失败静默降级 |
+| `feed.wxml` `.fi-av` | 有 `avatarUrl` 时渲染 `<image class="fi-av-img" mode="aspectFill"/>`，否则继续显示彩色首字母 |
+| `feed.wxss` | `.fi-av` 加 `overflow: hidden`；新增 `.fi-av-img { width:72rpx; height:72rpx }` |
+
+> 评论区头像（comment sheet 内 `cmt-av`）暂未接入真实 avatarUrl，仍用彩色首字母。
+
+---
+
 ## 待办 / 已知问题
 
 - [x] Canvas 打卡海报：已迁移至 Canvas 2d API（0.0.4）
@@ -516,6 +551,10 @@ if (event && event.nickname) {
 - [x] 修复发起人在招募阶段看到"退出球局"按钮的 Bug（bottom bar 加 `isCreator` 分支，0.0.9）
 - [x] 补全取消球局入口：发起人底部栏显示"取消球局"按钮，调用 `cancelPost` 云函数（0.0.9）
 - [x] profile 主页社区化重设计（动态 Feed、本周节奏、球搭子关系称号、Hero 双向光晕，0.0.9）
+- [x] 首页 Filter Tab 隐藏、Live Banner 间距、"已打"双重拼接、双打人数、0人兜底（0.1.0）
+- [x] Tennis Mode 底部栏穿透修复、辅助文字对比度提升、动态重复渲染竞态修复（0.1.0）
+- [x] 动态页发布者头像接入 players 集合，批量查询 avatarUrl（0.1.0）
+- [ ] 动态页评论区头像未接入真实 avatarUrl（仍用彩色首字母）
 - [ ] `moments`/`avatars` 云存储安全规则：需控制台配置允许已登录用户上传（见下方说明）
 - [ ] 球搭子"约球"按钮目前仅跳转发帖页 + 预填备注，未来可做好友内消息通知闭环
 

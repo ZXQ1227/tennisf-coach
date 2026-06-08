@@ -326,8 +326,9 @@ Page({
               wx.showToast({ title: '球局已取消', icon: 'none' })
               self.loadPost()
             }
-          }).catch(function() {
+          }).catch(function(err) {
             wx.hideLoading()
+            console.error('cancelPost failed', err)
             wx.showToast({ title: '操作失败，请重试', icon: 'none' })
           })
       }

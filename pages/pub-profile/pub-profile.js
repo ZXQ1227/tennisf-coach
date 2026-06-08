@@ -113,6 +113,6 @@ Page({
       wx.setStorageSync('postPrefillNote', '约 ' + name + ' 一起打')
       wx.setStorageSync('postPrefillPartner', name)
     }
-    wx.switchTab({ url: '/pages/post/post' })
+    wx.navigateTo({ url: '/pages/post/post' })
   }
 })

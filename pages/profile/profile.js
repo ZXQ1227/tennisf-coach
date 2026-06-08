@@ -98,7 +98,7 @@ Page({
 
   goSetup: function() { wx.navigateTo({ url: '/pages/setup/setup' }) },
   goEdit: function() { wx.navigateTo({ url: '/pages/setup/setup?mode=edit' }) },
-  goPostTab: function() { wx.switchTab({ url: '/pages/post/post' }) },
+  goPostTab: function() { wx.navigateTo({ url: '/pages/post/post' }) },
 
   goDetailFromTimeline: function(e) {
     var id = e.currentTarget.dataset.id
@@ -117,7 +117,7 @@ Page({
       wx.setStorageSync('postPrefillNote', '约 ' + name + ' 一起打')
       wx.setStorageSync('postPrefillPartner', name)
     }
-    wx.switchTab({ url: '/pages/post/post' })
+    wx.navigateTo({ url: '/pages/post/post' })
   },
 
   likePartner: function(e) {

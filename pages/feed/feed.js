@@ -136,6 +136,7 @@ Page({
           type: m.type === 'video' ? 'video' : 'photo',
           postId: m.postId || '',
           author: m.author || '球友',
+          avatarUrl: '',
           avatarColor: colorFor(m.author || ''),
           avatarInitial: (m.author || '球').slice(-1),
           timeAgo: timeAgo(ts),
@@ -157,6 +158,26 @@ Page({
           cardSize: imgDisplay.length >= 2 ? 'large' : 'normal',
         }
       })
+
+      // Batch-fetch author avatars from players collection
+      var authors = []
+      items.forEach(function(item) {
+        if (item.author && authors.indexOf(item.author) === -1) authors.push(item.author)
+      })
+      if (authors.length > 0) {
+        try {
+          var playerRes = await db.collection('players')
+            .where({ nickname: _.in(authors) })
+            .field({ nickname: true, avatarUrl: true })
+            .get()
+          var avatarMap = {}
+          ;(playerRes.data || []).forEach(function(p) { if (p.avatarUrl) avatarMap[p.nickname] = p.avatarUrl })
+          items = items.map(function(item) {
+            var url = avatarMap[item.author] || ''
+            return url ? Object.assign({}, item, { avatarUrl: url }) : item
+          })
+        } catch(e) {}
+      }
 
       if (fresh && !this.data.personalInjected) {
         var personal = this.buildPersonalItems(likedItems)

@@ -101,18 +101,18 @@
   color: #A6FF33;
 }
 
-.tm-meta-sep { font-size: 22rpx; color: rgba(255,255,255,0.2); }
+.tm-meta-sep { font-size: 22rpx; color: rgba(255,255,255,0.3); }
 
 .tm-status-txt {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.55);
+  color: rgba(255,255,255,0.72);
 }
 
 .tm-players-row { }
 
 .tm-players-label {
   font-size: 22rpx;
-  color: rgba(255,255,255,0.62);
+  color: rgba(255,255,255,0.72);
 }
 
 /* ── Scroll ── */
@@ -367,10 +367,11 @@
   left: 0;
   right: 0;
   z-index: 100;
-  background: #091610;
+  background: rgba(9,22,16,0.96);
+  backdrop-filter: blur(12px);
   border-top: 1rpx solid rgba(255,255,255,0.09);
+  box-shadow: 0 -20rpx 40rpx 8rpx #091610;
   padding: 20rpx 32rpx;
-  /* 额外 20rpx 防止 timeline 末尾点穿透到 safe area 区域 */
   padding-bottom: calc(40rpx + env(safe-area-inset-bottom));
   display: flex;
   align-items: center;

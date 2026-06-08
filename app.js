@@ -132,7 +132,7 @@ App({
     }
     if (statusCode === 'in-progress') {
       var elapsedMin = Math.floor(msElapsed / 60000)
-      return '已打 ' + elapsedMin + ' 分钟'
+      return elapsedMin + ' 分钟'
     }
     if (statusCode === 'starting-soon') {
       var minLeft = Math.max(1, Math.floor(msTillStart / 60000))
@@ -161,12 +161,25 @@ App({
 
     var joined = p.joined || 0
     var need = p.need || 1
-    var spotsLeft = Math.max(0, need - joined)
+
+    // doubles need at least 4 players
+    if (p.matchType === 'doubles' && need < 4) need = 4
+
     var now = Date.now()
     var gameStatus = this.computeGameStatus(p, now)
-    var timeLabel = this.computeTimeLabel(p, gameStatus.code, now)
+    var code = gameStatus.code
+
+    // in-progress joined cannot be 0 — fallback to joiners array or 1
+    if (code === 'in-progress' && joined === 0) {
+      joined = Math.max((p.joiners || []).length, 1)
+    }
+
+    var spotsLeft = Math.max(0, need - joined)
+    var timeLabel = this.computeTimeLabel(p, code, now)
 
     var result = Object.assign({}, p)
+    result.joined = joined
+    result.need = need
     result.dateLabel = this.formatDate(p.date)
     result.levelInfo = LEVEL_MAP[p.level] || null
     result.matchLabel = MATCH_MAP[p.matchType] || ''
@@ -180,7 +193,6 @@ App({
     result.canWaitlist = gameStatus.code === 'full'
 
     // 预计算 class 字符串（避免 WXML 里跨行表达式）
-    var code = gameStatus.code
     result.cardClass = 'card' + (code === 'starting-soon' ? ' card-starting-soon' : '') + (code === 'in-progress' ? ' card-in-progress' : '') + (gameStatus.dim ? ' card-dim' : '')
     result.heroStatusDotClass = 'hero-status-dot' + (gameStatus.live ? ' dot-live-white' : '') + (gameStatus.pulse ? ' dot-pulse-white' : '')
     result.heroStyle = (code === 'finished' || code === 'cancelled') ? 'opacity:0.75' : ''

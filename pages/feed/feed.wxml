@@ -40,7 +40,10 @@
         <!-- 作者行 -->
         <view class="fi-hd">
           <view class="fi-av" style="background:{{item.avatarColor}}"
-                bindtap="goAuthor" data-name="{{item.author}}">{{item.avatarInitial}}</view>
+                bindtap="goAuthor" data-name="{{item.author}}">
+            <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" class="fi-av-img" mode="aspectFill"/>
+            <text wx:else>{{item.avatarInitial}}</text>
+          </view>
           <view class="fi-hd-info">
             <text class="fi-author" bindtap="goAuthor" data-name="{{item.author}}">{{item.author}}</text>
             <view class="fi-hd-meta">

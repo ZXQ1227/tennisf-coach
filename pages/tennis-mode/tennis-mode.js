@@ -290,7 +290,11 @@ Page({
         agoLabel: '刚刚',
         createdAt: now
       }
-      self.setData({ moments: [m].concat(self.data.moments) })
+      // Guard against loadMoments having already fetched this item while add was in-flight
+      var alreadyIn = self.data.moments.some(function(x) { return x.id === dbRes._id })
+      if (!alreadyIn) {
+        self.setData({ moments: [m].concat(self.data.moments) })
+      }
     } catch(e) {
       wx.showToast({ title: '发布失败，请重试', icon: 'none' })
     }

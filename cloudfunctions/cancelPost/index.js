@@ -6,12 +6,20 @@ exports.main = async (event) => {
   const db = cloud.database()
   const { postId } = event
 
-  const { data: post } = await db.collection('posts').doc(postId).get()
-  if (post._openid !== OPENID) return { error: '无权操作' }
+  if (!postId) return { error: '缺少 postId' }
+  if (!OPENID) return { error: '无法获取用户身份' }
 
-  await db.collection('posts').doc(postId).update({
-    data: { cancelled: true }
-  })
+  try {
+    const { data: post } = await db.collection('posts').doc(postId).get()
+    if (!post) return { error: '球局不存在' }
+    if (post._openid !== OPENID) return { error: '无权操作' }
 
-  return { success: true }
+    await db.collection('posts').doc(postId).update({
+      data: { cancelled: true }
+    })
+
+    return { success: true }
+  } catch (e) {
+    return { error: e.message || '服务异常' }
+  }
 }
