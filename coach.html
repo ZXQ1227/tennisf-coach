@@ -178,8 +178,8 @@
 </div>
 
 <script>
-// ── 部署 Cloudflare Worker 后把 URL 填在这里 ──
-var WORKER_URL = 'https://twilight-dream-d7d8.xzhou5154.workers.dev'
+var DEEPSEEK_KEY = 'sk-d203e6b36cb640e3991212e029fcc234'
+var DEEPSEEK_URL = 'https://api.deepseek.com/chat/completions'
 
 var AV_COLORS = ['#2BB673','#4ECDC4','#F7B731','#A29BFE','#FF6B6B']
 var LEVEL_LABEL = { beginner:'新手 2.0-2.5', intermediate:'进阶 3.0-3.5', advanced:'竞技 4.0+' }
@@ -301,27 +301,30 @@ function doSend(text) {
   var controller = new AbortController()
   var timer = setTimeout(function() { controller.abort() }, 30000)
 
-  fetch(WORKER_URL, {
+  fetch(DEEPSEEK_URL, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ messages: messages }),
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': 'Bearer ' + DEEPSEEK_KEY
+    },
+    body: JSON.stringify({ model: 'deepseek-chat', messages: messages, max_tokens: 600, temperature: 0.7 }),
     signal: controller.signal
   })
   .then(function(r) { clearTimeout(timer); return r.json() })
   .then(function(data) {
     removeTyping(); STATE.thinking = false
-    if (data.error) { addMsg('ai', '出错了：' + data.error); return }
-    var reply = data.reply || '暂时无法回复，请稍后再试。'
-    addMsg('ai', reply)
-    STATE.history.push({ role:'user', content:text })
-    STATE.history.push({ role:'assistant', content:reply })
-    if (STATE.history.length > 20) STATE.history = STATE.history.slice(-20)
+    var reply = data.choices && data.choices[0] && data.choices[0].message && data.choices[0].message.content
+    addMsg('ai', reply || '暂时无法回复，请稍后再试。')
+    if (reply) {
+      STATE.history.push({ role:'user', content:text })
+      STATE.history.push({ role:'assistant', content:reply })
+      if (STATE.history.length > 20) STATE.history = STATE.history.slice(-20)
+    }
   })
   .catch(function(e) {
     clearTimeout(timer)
     removeTyping(); STATE.thinking = false
-    var msg = e && e.name === 'AbortError' ? '请求超时，请重试。' : '网络错误：' + (e ? e.message : '')
-    addMsg('ai', msg)
+    addMsg('ai', e && e.name === 'AbortError' ? '请求超时，请重试。' : '网络错误，请重试。')
   })
 }
 
