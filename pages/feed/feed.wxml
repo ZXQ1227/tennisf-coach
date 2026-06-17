@@ -2,8 +2,7 @@
 
   <!-- ── Header ── -->
   <view class="feed-hd">
-    <text class="feed-hd-title">动态</text>
-    <text class="feed-hd-sub">TennisF 运动社区</text>
+    <text class="feed-hd-title">运动记录</text>
   </view>
 
   <!-- ── Loading skeleton ── -->
@@ -26,8 +25,8 @@
   <!-- ── Empty state ── -->
   <view class="feed-empty" wx:elif="{{!loading && feedItems.length === 0}}">
     <text class="feed-empty-ico">🎾</text>
-    <text class="feed-empty-title">还没有动态</text>
-    <text class="feed-empty-sub">打球时上传照片，运动瞬间留在这里</text>
+    <text class="feed-empty-title">还没有运动记录</text>
+    <text class="feed-empty-sub">打球时上传照片，你和球搭子的瞬间会出现在这里</text>
   </view>
 
   <!-- ── Feed list ── -->
@@ -41,7 +40,8 @@
         <view class="fi-hd">
           <view class="fi-av" style="background:{{item.avatarColor}}"
                 bindtap="goAuthor" data-name="{{item.author}}">
-            <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" class="fi-av-img" mode="aspectFill"/>
+            <image wx:if="{{item.avatarUrl}}" src="{{item.avatarUrl}}" class="fi-av-img" mode="aspectFill"
+                   binderror="onAvatarError" data-index="{{index}}" />
             <text wx:else>{{item.avatarInitial}}</text>
           </view>
           <view class="fi-hd-info">
@@ -62,7 +62,8 @@
           <view wx:for="{{item.imagesDisplay}}" wx:key="*this" wx:for-item="imgUrl" wx:for-index="ii"
                 class="fi-img-cell"
                 catchtap="previewImages" data-urls="{{item.images}}" data-current="{{imgUrl}}">
-            <image src="{{imgUrl}}" class="fi-img" mode="aspectFill" />
+            <image src="{{imgUrl}}" class="fi-img" mode="aspectFill"
+                   binderror="onImgError" data-item-index="{{index}}" data-img-index="{{ii}}" />
             <view wx:if="{{ii === 8 && item.imgMore > 0}}" class="fi-img-more">+{{item.imgMore}}</view>
           </view>
         </view>
@@ -76,20 +77,11 @@
           <view class="fi-video-play">▶</view>
         </view>
 
-        <!-- 互动栏 -->
-        <view class="fi-actions">
-          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
-            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
-            <text class="fi-act-cnt">{{item.likeCount > 0 ? item.likeCount : '点赞'}}</text>
-          </view>
-          <view class="fi-act" bindtap="openCommentSheet" data-id="{{item.id}}">
-            <text class="fi-act-ico">💬</text>
-            <text class="fi-act-cnt">{{item.commentCount > 0 ? item.commentCount : '评论'}}</text>
-          </view>
-          <view class="fi-act fi-act-link" bindtap="goDetail" data-post-id="{{item.postId}}" wx:if="{{item.postId}}">
-            <text class="fi-act-ico">🎾</text>
-            <text class="fi-act-cnt">球局</text>
-          </view>
+        <!-- 关联球局 -->
+        <view wx:if="{{item.postId}}" class="fi-post-link" bindtap="goDetail" data-post-id="{{item.postId}}">
+          <text class="fi-post-link-ico">🎾</text>
+          <text class="fi-post-link-txt">查看球局</text>
+          <text class="fi-post-link-arr">›</text>
         </view>
 
       </view>
@@ -104,12 +96,6 @@
           </view>
           <view class="fi-hl-streak-badge">{{item.streakDays}}天</view>
         </view>
-        <view class="fi-actions fi-actions-hl">
-          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
-            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
-            <text class="fi-act-cnt fi-act-cnt-hl">{{item.likeCount > 0 ? item.likeCount : '为TA加油'}}</text>
-          </view>
-        </view>
       </view>
 
       <!-- ★ 成就解锁 高亮动态 ★ -->
@@ -121,12 +107,6 @@
             <text class="fi-hl-sub">{{item.author}} · {{item.timeAgo}}</text>
           </view>
           <view class="fi-hl-badge-gold">NEW</view>
-        </view>
-        <view class="fi-actions fi-actions-hl">
-          <view class="fi-act {{item.isLiked ? 'fi-act-liked' : ''}}" bindtap="likeItem" data-id="{{item.id}}">
-            <text class="fi-act-ico">{{item.isLiked ? '❤️' : '🤍'}}</text>
-            <text class="fi-act-cnt fi-act-cnt-hl">{{item.likeCount > 0 ? item.likeCount : '恭喜TA'}}</text>
-          </view>
         </view>
       </view>
 
@@ -153,43 +133,9 @@
         <view class="fi-spin"></view>
         <text class="fi-loading-txt">加载更多</text>
       </view>
-      <text class="fi-no-more" wx:elif="{{!hasMore && feedItems.length > 0}}">— 已加载全部动态 —</text>
+      <text class="fi-no-more" wx:elif="{{!hasMore && feedItems.length > 0}}">— 已加载全部 —</text>
     </view>
   </view>
 
 </view>
 
-<!-- ── 评论 Sheet ── -->
-<view class="sheet-overlay" wx:if="{{commentSheetOpen}}" bindtap="closeCommentSheet">
-  <view class="comment-sheet" catchtap="noop">
-    <view class="sheet-handle"></view>
-    <view class="sheet-title">
-      <text>评论</text>
-      <text wx:if="{{activeItem && activeItem.commentCount > 0}}" class="sheet-title-cnt"> {{activeItem.commentCount}}</text>
-    </view>
-
-    <!-- 评论列表 -->
-    <view class="comment-loading-row" wx:if="{{commentsLoading}}">
-      <view class="fi-spin"></view>
-    </view>
-    <scroll-view class="comment-list" scroll-y wx:elif="{{comments.length > 0}}">
-      <view wx:for="{{comments}}" wx:key="id" wx:for-item="c" class="cmt-item">
-        <view class="cmt-av" style="background:{{c.avatarColor}}">{{c.avatarInitial}}</view>
-        <view class="cmt-body">
-          <text class="cmt-author">{{c.author}}</text>
-          <text class="cmt-text">{{c.content}}</text>
-          <text class="cmt-time">{{c.timeAgo}}</text>
-        </view>
-      </view>
-    </scroll-view>
-    <view class="comment-empty" wx:elif="{{!commentsLoading}}">来说第一句话 👋</view>
-
-    <!-- 输入行 -->
-    <view class="cmt-input-row">
-      <input class="cmt-input" placeholder="说点什么..." value="{{commentInput}}"
-             bindinput="onCommentInput" confirm-type="send" bindconfirm="submitComment"
-             focus="{{commentSheetOpen}}" />
-      <view class="cmt-send {{commentInput ? 'cmt-send-on' : ''}}" bindtap="submitComment">发送</view>
-    </view>
-  </view>
-</view>

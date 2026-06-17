@@ -13,6 +13,13 @@ exports.main = async function(event) {
     preferCourt: event.preferCourt || 'hard',
     playStyle: event.playStyle || 'steady',
     bio: event.bio || '',
+    ntrpLevel: event.ntrpLevel || '',
+    rallyCount: event.rallyCount || '',
+    strengths: event.strengths || [],
+    weaknesses: event.weaknesses || [],
+    goals: event.goals || [],
+    fitnessLevel: event.fitnessLevel || '',
+    injuries: event.injuries || [],
     updatedAt: db.serverDate()
   }
   try {

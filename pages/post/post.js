@@ -17,6 +17,10 @@ Page({
     step: 1,
     nickname: '',
     location: '',
+    locationName: '',
+    locationAddress: '',
+    locationLat: null,
+    locationLng: null,
     date: '',
     time: '',
     need: 4,
@@ -56,6 +60,7 @@ Page({
     contactInfo: '',
     note: '',
     dateMin: '',
+    avatarUrl: '',
     submitting: false,
     // 坑位管理
     slots: [],
@@ -71,8 +76,10 @@ Page({
     const todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate())
     this.todayStr = todayStr
     if (options && options.note) this.setData({ note: decodeURIComponent(options.note) })
-    const savedNickname = wx.getStorageSync('nickname') || ''
-    this.setData({ dateMin: todayStr, date: todayStr, time: this.getDefaultTime(), nickname: savedNickname })
+    var player = getApp().globalData.player
+    var savedNickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
+    var savedAvatar = (player && player.avatarUrl) || wx.getStorageSync('avatarUrl') || ''
+    this.setData({ dateMin: todayStr, date: todayStr, time: this.getDefaultTime(), nickname: savedNickname, avatarUrl: savedAvatar })
     this._rebuildSlots()
   },
 
@@ -80,7 +87,8 @@ Page({
     this.setData({ step: 1 })
     var update = {}
     var player = getApp().globalData.player
-    update.nickname = (player && player.nickname) ? player.nickname : (wx.getStorageSync('nickname') || '')
+    update.nickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
+    update.avatarUrl = (player && player.avatarUrl) || wx.getStorageSync('avatarUrl') || ''
     var prefillNote = wx.getStorageSync('postPrefillNote')
     if (prefillNote) { update.note = prefillNote; wx.removeStorageSync('postPrefillNote') }
     this.setData(update)
@@ -102,7 +110,7 @@ Page({
 
   nextStep: function() {
     const step = this.data.step
-    if (step === 1 && (!this.data.nickname.trim() || !this.data.location.trim() || !this.data.date || !this.data.time)) {
+    if (step === 1 && (!this.data.nickname.trim() || !this.data.locationName.trim() || !this.data.date || !this.data.time)) {
       wx.showToast({ title: '请填写完整信息', icon: 'none' })
       return
     }
@@ -111,9 +119,41 @@ Page({
 
   prevStep: function() { this.setData({ step: this.data.step - 1 }) },
 
-  onNicknameInput: function(e) { this.setData({ nickname: e.detail.value }) },
-  onLocationInput: function(e) { this.setData({ location: e.detail.value }) },
   onContactInput: function(e) { this.setData({ contactInfo: e.detail.value }) },
+
+  chooseLocation: function() {
+    var self = this
+    wx.chooseLocation({
+      success: function(res) {
+        self.setData({
+          locationName: res.name || '',
+          locationAddress: res.address || '',
+          locationLat: res.latitude,
+          locationLng: res.longitude,
+          location: res.name || ''
+        })
+      },
+      fail: function(err) {
+        var msg = (err && err.errMsg) || ''
+        if (msg.indexOf('cancel') !== -1) return
+        if (msg.indexOf('auth') !== -1 || msg.indexOf('deny') !== -1) {
+          wx.showModal({
+            title: '需要位置权限',
+            content: '选择球场需要开启位置权限，请前往设置中开启',
+            confirmText: '去设置',
+            cancelText: '取消',
+            success: function(r) { if (r.confirm) wx.openSetting() }
+          })
+        } else {
+          wx.showToast({ title: '选择失败，请重试', icon: 'none' })
+        }
+      }
+    })
+  },
+
+  clearLocation: function() {
+    this.setData({ locationName: '', locationAddress: '', locationLat: null, locationLng: null, location: '' })
+  },
   onNoteInput: function(e) { this.setData({ note: e.detail.value }) },
 
   onDateChange: function(e) {
@@ -309,7 +349,10 @@ Page({
       await db.collection('posts').add({
         data: {
           nickname: nickname,
-          location: data.location,
+          location: data.locationName || data.location,
+          locationAddress: data.locationAddress || '',
+          locationLat: data.locationLat || null,
+          locationLng: data.locationLng || null,
           date: data.date,
           time: data.time,
           gameTimestamp: gameTimestamp,

@@ -21,14 +21,17 @@ Page({
     displaySlots: [],
     isReservedUser: false,
     myReservedSlotIndex: -1,
-    hasOpenSlot: false
+    hasOpenSlot: false,
+    showNicknameSheet: false,
+    sheetAvatarUrl: ''
   },
 
   onLoad: function(options) {
     this.postId = options.id
     var player = getApp().globalData.player
     var savedNickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
-    this.setData({ myName: savedNickname })
+    var savedAvatar = (player && player.avatarUrl) || wx.getStorageSync('avatarUrl') || ''
+    this.setData({ myName: savedNickname, sheetAvatarUrl: savedAvatar })
     this.loadPost()
     this.loadGallery()
   },
@@ -53,6 +56,18 @@ Page({
 
   previewGallery: function(e) {
     wx.previewImage({ current: e.currentTarget.dataset.url, urls: e.currentTarget.dataset.urls })
+  },
+
+  openNavigation: function() {
+    var post = this.data.post
+    if (!post || !post.locationLat || !post.locationLng) return
+    wx.openLocation({
+      latitude: post.locationLat,
+      longitude: post.locationLng,
+      name: post.location || '',
+      address: post.locationAddress || post.location || '',
+      scale: 16
+    })
   },
 
   onShareAppMessage: function() {
@@ -213,13 +228,46 @@ Page({
 
   onNameInput: function(e) { this.setData({ myName: e.detail.value }) },
 
+  // ── 昵称采集 Sheet ──
+  onNicknameSheetInput: function(e) { this.setData({ myName: e.detail.value }) },
+
+  onSheetChooseAvatar: function(e) {
+    var tempUrl = e.detail.avatarUrl
+    this.setData({ sheetAvatarUrl: tempUrl })
+    var self = this
+    wx.cloud.uploadFile({
+      cloudPath: 'avatars/' + Date.now() + '.jpg',
+      filePath: tempUrl,
+      success: function(res) {
+        self.setData({ sheetAvatarUrl: res.fileID })
+        wx.setStorageSync('avatarUrl', res.fileID)
+        var player = app.globalData.player || {}
+        player.avatarUrl = res.fileID
+        app.globalData.player = player
+      }
+    })
+  },
+
+  confirmNickname: function() {
+    var name = (this.data.myName || '').trim()
+    if (!name) { wx.showToast({ title: '请输入昵称', icon: 'none' }); return }
+    wx.setStorageSync('nickname', name)
+    var player = app.globalData.player || {}
+    player.nickname = name
+    app.globalData.player = player
+    this.setData({ showNicknameSheet: false })
+    this.join()
+  },
+
+  closeNicknameSheet: function() { this.setData({ showNicknameSheet: false }) },
+
   join: async function() {
     const post = this.data.post
     const myName = this.data.myName
     const joining = this.data.joining
     if (joining) return
     if (!myName.trim()) {
-      wx.showToast({ title: '输入你的昵称', icon: 'none' })
+      this.setData({ showNicknameSheet: true })
       return
     }
 

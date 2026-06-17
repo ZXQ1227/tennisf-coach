@@ -1,1 +1,6 @@
-{ "navigationBarTitleText": "" }
+{
+  "navigationBarTitleText": "成长",
+  "navigationBarBackgroundColor": "#121C17",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#121C17"
+}

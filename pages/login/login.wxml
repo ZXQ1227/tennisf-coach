@@ -1,0 +1,53 @@
+<view class="page">
+
+  <!-- 隐私授权弹窗 -->
+  <view wx:if="{{showPrivacy}}" class="privacy-mask">
+    <view class="privacy-box">
+      <text class="privacy-title">隐私保护</text>
+      <text class="privacy-desc">TennisF 需要获取你的微信头像和昵称，用于完善球员档案，不用于其他用途。</text>
+      <button id="privacy-agree-btn" class="privacy-agree"
+              open-type="agreePrivacyAuthorization"
+              bindagreeprivacyauthorization="onAgreePrivacy">同意并继续</button>
+      <button class="privacy-deny" bindtap="onDenyPrivacy">不同意</button>
+    </view>
+  </view>
+
+  <view class="nav-back" bindtap="goBack" wx:if="{{canGoBack}}">
+    <text class="nav-back-icon">←</text>
+  </view>
+
+  <view class="brand">
+    <text class="brand-logo">🎾</text>
+    <text class="brand-name">TennisF</text>
+    <text class="brand-sub">你的网球运动记录</text>
+  </view>
+
+  <view class="card">
+
+    <!-- 头像 -->
+    <view class="section-label">头像</view>
+    <button class="av-row" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+      <view class="av-circle">
+        <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="av-img" mode="aspectFill" />
+        <view wx:else class="av-ph">
+          <text class="av-ph-icon">📷</text>
+        </view>
+      </view>
+      <text class="av-hint">使用你的微信头像 →</text>
+    </button>
+
+    <!-- 昵称 -->
+    <view class="section-label" style="margin-top:40rpx">昵称</view>
+    <input class="nickname-input" type="nickname"
+           placeholder="点击选择微信昵称"
+           value="{{nickname}}" bindinput="onNicknameInput" />
+    <text class="nickname-hint">点击输入框，顶部会出现「使用微信昵称」</text>
+
+  </view>
+
+  <button class="confirm-btn {{nickname ? '' : 'confirm-disabled'}}"
+          bindtap="confirm" disabled="{{saving}}">
+    {{saving ? '正在进入...' : '进入 TennisF →'}}
+  </button>
+
+</view>

@@ -15,11 +15,36 @@
   <view wx:if="{{step === 1}}">
     <view class="step-title">先告诉我基本信息</view>
 
+    <!-- 身份确认（只读） -->
+    <view class="section">
+      <view class="section-label">组局人</view>
+      <view class="identity-row identity-readonly">
+        <view class="av-pick-btn">
+          <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="av-pick-img" mode="aspectFill" />
+          <view wx:else class="av-pick-ph">
+            <text class="av-pick-initial">{{nickname ? nickname.slice(-1) : '?'}}</text>
+          </view>
+        </view>
+        <text class="identity-name">{{nickname || '未设置昵称'}}</text>
+      </view>
+    </view>
+
     <view class="section">
       <view class="section-label">在哪打</view>
-      <view class="input-card">
-        <text class="input-prefix">📍</text>
-        <input class="input" placeholder="场地名称" value="{{location}}" bindinput="onLocationInput" />
+      <!-- 未选择状态 -->
+      <view wx:if="{{!locationName}}" class="loc-picker loc-picker-empty" bindtap="chooseLocation">
+        <text class="loc-picker-icon">📍</text>
+        <text class="loc-picker-placeholder">点击选择球场</text>
+        <text class="loc-picker-arrow">›</text>
+      </view>
+      <!-- 已选择状态 -->
+      <view wx:else class="loc-picker loc-picker-filled" bindtap="chooseLocation">
+        <text class="loc-picker-icon">📍</text>
+        <view class="loc-picker-info">
+          <text class="loc-picker-name">{{locationName}}</text>
+          <text class="loc-picker-addr" wx:if="{{locationAddress}}">{{locationAddress}}</text>
+        </view>
+        <text class="loc-picker-change">换 ›</text>
       </view>
     </view>
 

@@ -1,14 +1,15 @@
 {
   "pages": [
     "pages/index/index",
-    "pages/feed/feed",
+    "pages/login/login",
     "pages/post/post",
     "pages/profile/profile",
     "pages/setup/setup",
     "pages/detail/detail",
     "pages/tennis-mode/tennis-mode",
     "pages/pub-profile/pub-profile",
-    "pages/game-report/game-report"
+    "pages/game-report/game-report",
+    "pages/feed/feed"
   ],
   "window": {
     "navigationBarBackgroundColor": "#FFFFFF",
@@ -23,11 +24,23 @@
     "backgroundColor": "#FFFFFF",
     "borderStyle": "white",
     "list": [
-      { "pagePath": "pages/index/index", "text": "约球" },
-      { "pagePath": "pages/feed/feed", "text": "动态" },
-      { "pagePath": "pages/profile/profile", "text": "我的" }
+      { "pagePath": "pages/index/index", "text": "训练" },
+      { "pagePath": "pages/feed/feed", "text": "记录" },
+      { "pagePath": "pages/profile/profile", "text": "成长" }
     ]
   },
+  "permission": {
+    "scope.userLocation": {
+      "desc": "用于在地图上选择球场位置"
+    },
+    "scope.userFuzzyLocation": {
+      "desc": "用于显示附近球场的距离，帮助你找到合适的球局"
+    }
+  },
+  "requiredPrivateInfos": [
+    "chooseLocation",
+    "getFuzzyLocation"
+  ],
   "sitemapLocation": "sitemap.json",
   "lazyCodeLoading": "requiredComponents"
 }

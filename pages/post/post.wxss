@@ -340,3 +340,45 @@
   text-align: center; padding: 22rpx; border-radius: 20rpx;
   font-size: 28rpx; color: #888; background: #F7F8FA;
 }
+
+/* ── 地图选择器 ── */
+.loc-picker {
+  display: flex; align-items: center; gap: 16rpx;
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 28rpx 32rpx;
+  box-shadow: 0 2rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 1.5rpx solid #F0F0F0;
+}
+.loc-picker-empty { border-style: dashed; border-color: #DDD; background: #FAFAFA; }
+.loc-picker-filled { border-color: rgba(43,182,115,0.35); background: #F5FDF9; }
+.loc-picker-icon { font-size: 36rpx; flex-shrink: 0; }
+.loc-picker-placeholder { flex: 1; font-size: 30rpx; color: #BBBBBB; }
+.loc-picker-arrow { font-size: 40rpx; color: #CCCCCC; }
+.loc-picker-info { flex: 1; display: flex; flex-direction: column; gap: 6rpx; }
+.loc-picker-name { font-size: 30rpx; font-weight: 600; color: #1A1A1A; }
+.loc-picker-addr { font-size: 22rpx; color: #AAAAAA; }
+.loc-picker-change { font-size: 24rpx; color: #2BB673; font-weight: 600; flex-shrink: 0; }
+
+/* ── 身份确认 ── */
+.identity-row {
+  display: flex; align-items: center; gap: 24rpx;
+}
+.av-pick-btn {
+  width: 96rpx; height: 96rpx; border-radius: 50%;
+  padding: 0; margin: 0; line-height: 1;
+  background: #F0F0F0; border: none;
+  flex-shrink: 0; overflow: hidden;
+  display: flex; align-items: center; justify-content: center;
+}
+.av-pick-img { width: 96rpx; height: 96rpx; border-radius: 50%; display: block; }
+.av-pick-ph {
+  width: 96rpx; height: 96rpx; border-radius: 50%;
+  background: #E8F7EE;
+  display: flex; align-items: center; justify-content: center;
+}
+.av-pick-initial { font-size: 36rpx; color: #2BB673; }
+.identity-readonly { pointer-events: none; }
+.identity-name {
+  font-size: 32rpx; font-weight: 600; color: #1A1A1A;
+}

@@ -2,21 +2,35 @@ App({
   globalData: {
     player: null,
     activityCache: null,
+    _privacyResolve: null,
+    _onPrivacyNeeded: null,
   },
 
   onLaunch: function() {
     wx.cloud.init({
       env: 'cloud1-d0g1q4d5p6fc28083',
       traceUser: true,
-      timeout: 20000
+      timeout: 90000
     })
+
+    var self = this
+    wx.onNeedPrivacyAuthorization(function(resolve) {
+      self.globalData._privacyResolve = resolve
+      if (self.globalData._onPrivacyNeeded) self.globalData._onPrivacyNeeded()
+    })
+
     // Load player from cache first, then refresh from cloud
     var cached = wx.getStorageSync('playerProfile')
     if (cached && cached.nickname) {
       this.globalData.player = cached
     }
-    // 延迟刷新：让首屏先渲染，避免云函数冷启动 timeout 卡在启动路径
+    // 游客也可进入，功能入口再按需触发登录
+    this._initBackground()
+  },
+
+  _initBackground: function() {
     var self = this
+    // 延迟刷新：让首屏先渲染，避免云函数冷启动 timeout 卡在启动路径
     setTimeout(function() { self.refreshPlayer() }, 1500)
     // 缓存 openid，供各页面判断是否是创建者
     wx.cloud.callFunction({ name: 'getOpenId' }).then(function(res) {
@@ -40,22 +54,20 @@ App({
     return !!(this.globalData.player && this.globalData.player.nickname)
   },
 
+  requireAuth: function(returnUrl) {
+    if (this.hasProfile()) return true
+    var url = '/pages/login/login'
+    if (returnUrl) url += '?return=' + encodeURIComponent(returnUrl)
+    wx.navigateTo({ url: url })
+    return false
+  },
+
   requireProfile: function(onSuccess) {
     if (this.hasProfile()) {
       if (onSuccess) onSuccess()
       return
     }
-    wx.showModal({
-      title: '先创建球员档案',
-      content: '发起和加入球局需要先完善你的球员信息',
-      confirmText: '去创建',
-      cancelText: '取消',
-      success: function(res) {
-        if (res.confirm) {
-          wx.navigateTo({ url: '/pages/setup/setup' })
-        }
-      }
-    })
+    wx.navigateTo({ url: '/pages/login/login?return=' + encodeURIComponent('/pages/post/post') })
   },
 
   formatDate: function(dateStr) {

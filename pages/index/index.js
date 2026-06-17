@@ -20,21 +20,41 @@ Page({
     filters: FILTERS,
     activeFilter: 'all',
     nickname: '',
+    aiTodayFocus: '',
     activeCount: 0,
     ongoingCount: 0,
     showScoreOverlay: false,
     activeScorePostId: '',
     quickScoreA: 0,
     quickScoreB: 0,
-    quickScoreSet: 1
+    quickScoreSet: 1,
   },
 
   onShow: function() {
     const nickname = wx.getStorageSync('nickname') || ''
-    this.setData({ nickname: nickname })
+    const player = app.globalData.player
+    const aiTodayFocus = (player && player.aiTrainingFocus) || ''
+    this.setData({ nickname: nickname, aiTodayFocus: aiTodayFocus })
+    this._fetchUserLocation()
     this.loadPosts()
     this.startRefreshTimer()
   },
+
+  _fetchUserLocation: function() {
+    var self = this
+    wx.getFuzzyLocation({
+      type: 'gcj02',
+      success: function(res) {
+        self._userLat = res.latitude
+        self._userLng = res.longitude
+        // 已有帖子时补算距离
+        if (self.rawPosts && self.rawPosts.length) self.refreshStatuses()
+      },
+      fail: function() {}
+    })
+  },
+
+  goCoach: function() { wx.switchTab({ url: '/pages/coach/coach' }) },
 
   onHide: function() { this.stopRefreshTimer() },
   onUnload: function() { this.stopRefreshTimer() },
@@ -108,8 +128,12 @@ Page({
 
     // Process posts, preserving recentMoments from current state
     var myOpenId = wx.getStorageSync('myOpenId') || ''
+    var userLat = this._userLat, userLng = this._userLng
     var posts = rawPosts.map(function(p) {
       var processed = app.processPost(p)
+      if (userLat && userLng && p.locationLat && p.locationLng) {
+        processed.distanceText = _calcDistance(userLat, userLng, p.locationLat, p.locationLng)
+      }
       var current = null
       for (var i = 0; i < currentPosts.length; i++) {
         if (currentPosts[i]._id === p._id) { current = currentPosts[i]; break }
@@ -330,6 +354,18 @@ function _agoLabel(ts, now) {
   return Math.floor(diff / 60) + '小时前'
 }
 
+function _calcDistance(lat1, lng1, lat2, lng2) {
+  var R = 6371
+  var dLat = (lat2 - lat1) * Math.PI / 180
+  var dLng = (lng2 - lng1) * Math.PI / 180
+  var a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+          Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+          Math.sin(dLng/2) * Math.sin(dLng/2)
+  var km = R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a))
+  if (km < 1) return Math.round(km * 1000) + 'm'
+  return km.toFixed(1) + 'km'
+}
+
 function _keepPost(p, cutoff48) {
   if (p.cancelled) return false
   if (p.gameTimestamp) {
@@ -338,3 +374,4 @@ function _keepPost(p, cutoff48) {
   }
   return true
 }
+

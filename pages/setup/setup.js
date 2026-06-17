@@ -1,37 +1,48 @@
 var app = getApp()
 
-var STYLE_OPTIONS = [
-  { label: '稳健型', value: 'steady', desc: '重视稳定，以少失误为主' },
-  { label: '进攻型', value: 'aggressive', desc: '喜欢主动上网，积极得分' },
-  { label: '全能型', value: 'allround', desc: '攻守平衡，适应性强' },
-  { label: '防守型', value: 'defensive', desc: '擅长回球，以耐力取胜' }
+var NTRP_OPTIONS = [
+  { value: '1.5', label: '1.5', desc: '刚接触网球' },
+  { value: '2.0', label: '2.0', desc: '基础击打阶段' },
+  { value: '2.5', label: '2.5', desc: '能稳定对拉' },
+  { value: '3.0', label: '3.0', desc: '技术较全面' },
+  { value: '3.5', label: '3.5', desc: '有比赛经验' },
+  { value: '4.0', label: '4.0+', desc: '竞技级' }
 ]
+var RALLY_OPTIONS = ['1~3拍', '3~5拍', '5~10拍', '10拍以上']
+var STRENGTH_OPTIONS = ['正手', '反手', '发球', '截击', '步伐']
+var WEAKNESS_OPTIONS = ['下网', '出界', '步伐慢', '发球无力', '不会上旋', '心理紧张']
+var GOAL_OPTIONS = ['稳定对拉', '提升比赛胜率', '发球提升', '学会上旋', '步伐敏捷', '进阶3.5']
+var FITNESS_OPTIONS = ['30分钟就累', '能稳定打2小时', '体能很好']
+var INJURY_OPTIONS = ['肩', '腰', '膝盖', '手腕']
 
 Page({
   data: {
+    step: 1,
+    totalSteps: 4,
     isEdit: false,
-    saving: false,
+    // Step 1
     tempAvatarUrl: '',
     avatarUrl: '',
     nickname: '',
-    level: 'intermediate',
-    homeBase: '',
-    preferMatch: 'doubles',
-    preferCourt: 'hard',
-    playStyle: 'steady',
-    bio: '',
-    showOptional: false,
-    styleOptions: STYLE_OPTIONS,
-    courtTypeOptions: [
-      { label: '硬地', value: 'hard', selected: true },
-      { label: '红土', value: 'clay', selected: false },
-      { label: '草地', value: 'grass', selected: false }
-    ],
-    matchOptions: [
-      { label: '单打', value: 'singles', selected: false },
-      { label: '双打', value: 'doubles', selected: true },
-      { label: '随意', value: 'any', selected: false }
-    ]
+    ntrpLevel: '2.5',
+    ntrpOptions: NTRP_OPTIONS,
+    // Step 2
+    rallyCount: '',
+    rallyOptions: RALLY_OPTIONS,
+    strengths: [],
+    strengthOptions: STRENGTH_OPTIONS,
+    // Step 3
+    weaknesses: [],
+    weaknessOptions: WEAKNESS_OPTIONS,
+    goals: [],
+    goalOptions: GOAL_OPTIONS,
+    // Step 4
+    fitnessLevel: '',
+    fitnessOptions: FITNESS_OPTIONS,
+    hasInjury: false,
+    injuries: [],
+    injuryOptions: INJURY_OPTIONS,
+    saving: false
   },
 
   onLoad: function(options) {
@@ -43,123 +54,163 @@ Page({
         this.setData({
           avatarUrl: player.avatarUrl || '',
           nickname: player.nickname || '',
-          level: player.level || 'intermediate',
-          homeBase: player.homeBase || '',
-          preferMatch: player.preferMatch || 'doubles',
-          preferCourt: player.preferCourt || 'hard',
-          playStyle: player.playStyle || 'steady',
-          bio: player.bio || '',
-          courtTypeOptions: this.data.courtTypeOptions.map(function(o) {
-            return { label: o.label, value: o.value, selected: o.value === (player.preferCourt || 'hard') }
-          }),
-          matchOptions: this.data.matchOptions.map(function(o) {
-            return { label: o.label, value: o.value, selected: o.value === (player.preferMatch || 'doubles') }
-          })
+          ntrpLevel: player.ntrpLevel || '2.5',
+          rallyCount: player.rallyCount || '',
+          strengths: player.strengths || [],
+          weaknesses: player.weaknesses || [],
+          goals: player.goals || [],
+          fitnessLevel: player.fitnessLevel || '',
+          injuries: player.injuries || [],
+          hasInjury: (player.injuries || []).length > 0
         })
       }
     }
   },
 
-  onChooseAvatar: function(e) {
-    this.setData({ tempAvatarUrl: e.detail.avatarUrl })
-  },
+  // ── Step navigation ──
 
-  onNicknameInput: function(e) { this.setData({ nickname: e.detail.value }) },
-  onHomeBaseInput: function(e) { this.setData({ homeBase: e.detail.value }) },
-  onBioInput: function(e) { this.setData({ bio: e.detail.value }) },
-
-  selectLevel: function(e) { this.setData({ level: e.currentTarget.dataset.value }) },
-
-  selectMatchType: function(e) {
-    var val = e.currentTarget.dataset.value
-    this.setData({
-      preferMatch: val,
-      matchOptions: this.data.matchOptions.map(function(o) {
-        return { label: o.label, value: o.value, selected: o.value === val }
-      })
-    })
-  },
-
-  selectCourtType: function(e) {
-    var val = e.currentTarget.dataset.value
-    this.setData({
-      preferCourt: val,
-      courtTypeOptions: this.data.courtTypeOptions.map(function(o) {
-        return { label: o.label, value: o.value, selected: o.value === val }
-      })
-    })
-  },
-
-  selectStyle: function(e) { this.setData({ playStyle: e.currentTarget.dataset.value }) },
-
-  toggleOptional: function() { this.setData({ showOptional: !this.data.showOptional }) },
-
-  save: async function() {
-    if (!this.data.nickname.trim()) {
-      wx.showToast({ title: '请填写球员昵称', icon: 'none' })
-      return
+  nextStep: function() {
+    var step = this.data.step
+    if (!this._validateStep(step)) return
+    if (step < 4) {
+      this.setData({ step: step + 1 })
+    } else {
+      this._saveAndFinish()
     }
+  },
+
+  prevStep: function() {
+    var step = this.data.step
+    if (step > 1) this.setData({ step: step - 1 })
+    else wx.navigateBack()
+  },
+
+  _validateStep: function(step) {
+    if (step === 1 && !this.data.nickname.trim()) {
+      wx.showToast({ title: '请填写球员昵称', icon: 'none' }); return false
+    }
+    if (step === 2 && !this.data.rallyCount) {
+      wx.showToast({ title: '请选择多拍能力', icon: 'none' }); return false
+    }
+    if (step === 3 && this.data.goals.length === 0) {
+      wx.showToast({ title: '请选择训练目标', icon: 'none' }); return false
+    }
+    if (step === 4 && !this.data.fitnessLevel) {
+      wx.showToast({ title: '请选择体能状态', icon: 'none' }); return false
+    }
+    return true
+  },
+
+  // ── Step 1 ──
+
+  onChooseAvatar: function(e) { this.setData({ tempAvatarUrl: e.detail.avatarUrl }) },
+  onNicknameInput: function(e) { this.setData({ nickname: e.detail.value }) },
+
+  selectNtrp: function(e) { this.setData({ ntrpLevel: e.currentTarget.dataset.value }) },
+
+  // ── Step 2 ──
+
+  selectRally: function(e) { this.setData({ rallyCount: e.currentTarget.dataset.value }) },
+
+  toggleStrength: function(e) {
+    var val = e.currentTarget.dataset.value
+    var arr = this.data.strengths.slice()
+    var idx = arr.indexOf(val)
+    if (idx === -1) { arr.push(val) } else { arr.splice(idx, 1) }
+    this.setData({ strengths: arr })
+  },
+
+  // ── Step 3 ──
+
+  toggleWeakness: function(e) {
+    var val = e.currentTarget.dataset.value
+    var arr = this.data.weaknesses.slice()
+    var idx = arr.indexOf(val)
+    if (idx === -1) { arr.push(val) } else { arr.splice(idx, 1) }
+    this.setData({ weaknesses: arr })
+  },
+
+  toggleGoal: function(e) {
+    var val = e.currentTarget.dataset.value
+    var arr = this.data.goals.slice()
+    var idx = arr.indexOf(val)
+    if (idx === -1) { arr.push(val) } else { arr.splice(idx, 1) }
+    this.setData({ goals: arr })
+  },
+
+  // ── Step 4 ──
+
+  selectFitness: function(e) { this.setData({ fitnessLevel: e.currentTarget.dataset.value }) },
+
+  toggleHasInjury: function() {
+    var h = !this.data.hasInjury
+    this.setData({ hasInjury: h, injuries: h ? this.data.injuries : [] })
+  },
+
+  toggleInjury: function(e) {
+    var val = e.currentTarget.dataset.value
+    var arr = this.data.injuries.slice()
+    var idx = arr.indexOf(val)
+    if (idx === -1) { arr.push(val) } else { arr.splice(idx, 1) }
+    this.setData({ injuries: arr })
+  },
+
+  _saveAndFinish: async function() {
     if (this.data.saving) return
     this.setData({ saving: true })
+    wx.showLoading({ title: '保存中...', mask: true })
 
     try {
       var avatarUrl = this.data.avatarUrl
       if (this.data.tempAvatarUrl) {
-        wx.showLoading({ title: '上传头像中...' })
-        var uploadRes = await wx.cloud.uploadFile({
-          cloudPath: 'avatars/' + Date.now() + '.jpg',
-          filePath: this.data.tempAvatarUrl
-        })
-        avatarUrl = uploadRes.fileID
-        wx.hideLoading()
+        try {
+          var uploadRes = await wx.cloud.uploadFile({
+            cloudPath: 'avatars/' + Date.now() + '.jpg',
+            filePath: this.data.tempAvatarUrl
+          })
+          avatarUrl = uploadRes.fileID
+        } catch(e) {}
       }
 
-      var res = await wx.cloud.callFunction({
+      await wx.cloud.callFunction({
         name: 'savePlayer',
         data: {
           nickname: this.data.nickname.trim(),
           avatarUrl: avatarUrl,
-          level: this.data.level,
-          homeBase: this.data.homeBase,
-          preferMatch: this.data.preferMatch,
-          preferCourt: this.data.preferCourt,
-          playStyle: this.data.playStyle,
-          bio: this.data.bio
+          ntrpLevel: this.data.ntrpLevel,
+          rallyCount: this.data.rallyCount,
+          strengths: this.data.strengths,
+          weaknesses: this.data.weaknesses,
+          goals: this.data.goals,
+          fitnessLevel: this.data.fitnessLevel,
+          injuries: this.data.injuries
         }
       })
 
-      if (res.result && res.result.success) {
-        var player = {
-          nickname: this.data.nickname.trim(),
-          avatarUrl: avatarUrl,
-          level: this.data.level,
-          homeBase: this.data.homeBase,
-          preferMatch: this.data.preferMatch,
-          preferCourt: this.data.preferCourt,
-          playStyle: this.data.playStyle,
-          bio: this.data.bio
-        }
-        app.globalData.player = player
-        wx.setStorageSync('playerProfile', player)
-        // Also update nickname for backward compatibility
-        wx.setStorageSync('nickname', player.nickname)
+      var player = Object.assign({}, app.globalData.player || {}, {
+        nickname: this.data.nickname.trim(),
+        avatarUrl: avatarUrl,
+        ntrpLevel: this.data.ntrpLevel,
+        rallyCount: this.data.rallyCount,
+        strengths: this.data.strengths,
+        weaknesses: this.data.weaknesses,
+        goals: this.data.goals,
+        fitnessLevel: this.data.fitnessLevel,
+        injuries: this.data.injuries
+      })
+      app.globalData.player = player
+      wx.setStorageSync('playerProfile', player)
+      wx.setStorageSync('nickname', player.nickname)
 
-        wx.showToast({ title: this.data.isEdit ? '档案已更新' : '球员档案创建成功 🎾', icon: 'none' })
-        var self = this
-        setTimeout(function() {
-          if (self.data.isEdit) {
-            wx.navigateBack()
-          } else {
-            wx.switchTab({ url: '/pages/index/index' })
-          }
-        }, 800)
-      } else {
-        wx.showToast({ title: '保存失败，请重试', icon: 'none' })
-      }
+      wx.hideLoading()
+      wx.showToast({ title: '档案已保存', icon: 'success', duration: 1500 })
+      setTimeout(function() { wx.switchTab({ url: '/pages/index/index' }) }, 1500)
     } catch(e) {
       wx.hideLoading()
       wx.showToast({ title: '保存失败，请重试', icon: 'none' })
+      this.setData({ saving: false })
     }
-    this.setData({ saving: false })
-  }
+  },
+
+  noop: function() {}
 })

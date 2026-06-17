@@ -58,6 +58,20 @@
   letter-spacing: 0.5rpx;
 }
 
+/* AI 今日建议卡 */
+.ai-today-card {
+  display: flex; align-items: center; gap: 16rpx;
+  background: linear-gradient(90deg, #0E231A 0%, #142E1F 100%);
+  border-left: 5rpx solid #A6FF33;
+  border-radius: 20rpx; padding: 20rpx 24rpx;
+  margin-bottom: 16rpx;
+}
+.ai-today-icon { font-size: 32rpx; flex-shrink: 0; }
+.ai-today-info { flex: 1; display: flex; flex-direction: column; gap: 4rpx; }
+.ai-today-label { font-size: 20rpx; color: rgba(166,255,51,0.55); }
+.ai-today-val { font-size: 26rpx; font-weight: 700; color: #A6FF33; }
+.ai-today-arr { font-size: 28rpx; color: rgba(166,255,51,0.5); flex-shrink: 0; }
+
 /* Live Banner */
 .live-banner {
   display: flex;
@@ -648,4 +662,18 @@
   padding: 16rpx 28rpx;
   border-radius: 100rpx;
   margin-left: 24rpx;
+}
+
+/* ── 距离标签 ── */
+.card-distance {
+  font-size: 28rpx;
+  font-weight: 500;
+  color: #2BB673;
+  letter-spacing: 0;
+}
+.lc-distance {
+  font-size: 36rpx;
+  font-weight: 600;
+  color: rgba(166, 255, 51, 0.85);
+  letter-spacing: 0;
 }

@@ -1,0 +1,21 @@
+{
+  "envId": "cloud1-d0g1q4d5p6fc28083",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    { "name": "askCoach",         "timeout": 90, "runtime": "Nodejs18.15" },
+    { "name": "generatePortrait", "timeout": 90, "runtime": "Nodejs18.15" },
+    { "name": "sendInvite",       "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "getInvitations",   "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "respondInvite",    "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "joinPost",         "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "cancelJoin",       "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "cancelPost",       "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "getMyActivity",    "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "getPlayer",        "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "savePlayer",       "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "getOpenId",        "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "getPublicProfile", "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "sendNotice",       "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "updateLiveScore",  "timeout": 20, "runtime": "Nodejs18.15" }
+  ]
+}

@@ -1,3 +1,5 @@
 {
-  "navigationBarTitleText": "球员档案"
+  "navigationBarTitleText": "AI 球员档案",
+  "navigationBarBackgroundColor": "#0E231A",
+  "navigationBarTextStyle": "white"
 }

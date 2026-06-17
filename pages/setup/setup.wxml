@@ -1,130 +1,155 @@
+<wxs module="util" src="./utils.wxs"></wxs>
 <view class="page">
 
-  <view class="hero-bg">
-    <view class="court-v"></view>
-    <view class="court-h"></view>
-    <view class="hero-glow"></view>
-    <view class="hero-title">{{isEdit ? '编辑球员档案' : '创建球员档案'}}</view>
-    <view class="hero-sub">{{isEdit ? '更新你的球员信息' : '建立你在 TennisF 的球员身份'}}</view>
+  <!-- 步骤指示器（步骤1-4显示，步骤5隐藏）-->
+  <view class="steps-bar" wx:if="{{step < 5}}">
+    <view class="steps-inner">
+      <view wx:for="{{[1,2,3,4]}}" wx:key="*this" wx:for-item="s"
+            class="step-dot {{step === s ? 'step-active' : step > s ? 'step-done' : ''}}"></view>
+    </view>
+    <text class="steps-label">{{step}} / 4</text>
+  </view>
 
-    <!-- 头像选择 -->
-    <view class="avatar-section">
+  <!-- ══════════════════════════════
+       Step 1: 关于你
+       ══════════════════════════════ -->
+  <view wx:if="{{step === 1}}" class="step-view">
+    <view class="step-hd">
+      <view class="step-emoji">👤</view>
+      <view class="step-title">关于你</view>
+      <view class="step-sub">建立你的球员身份</view>
+    </view>
+
+    <!-- 头像 -->
+    <view class="avatar-wrap">
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-        <image wx:if="{{tempAvatarUrl || avatarUrl}}"
-          src="{{tempAvatarUrl || avatarUrl}}"
-          class="avatar-img" mode="aspectFill" />
+        <image wx:if="{{tempAvatarUrl || avatarUrl}}" src="{{tempAvatarUrl || avatarUrl}}"
+               class="avatar-img" mode="aspectFill" />
         <view wx:else class="avatar-placeholder">
           <text class="avatar-icon">📷</text>
-          <text class="avatar-hint">选择头像</text>
         </view>
       </button>
-      <view class="avatar-tip">点击选择微信头像</view>
+      <text class="avatar-hint">点击选择头像</text>
     </view>
-  </view>
-
-  <view class="body">
 
     <!-- 昵称 -->
-    <view class="section">
-      <view class="section-label">球员昵称</view>
-      <view class="input-card">
-        <input type="nickname" class="input"
-          placeholder="你在 TennisF 的名字"
-          value="{{nickname}}"
-          bindinput="onNicknameInput" />
-      </view>
-      <view class="input-tip">支持使用微信昵称，可自定义</view>
+    <view class="field-group">
+      <view class="field-label">球员昵称</view>
+      <input type="nickname" class="field-input" placeholder="你在 TennisF 的名字"
+             value="{{nickname}}" bindinput="onNicknameInput" />
     </view>
 
-    <!-- 水平 -->
-    <view class="section">
-      <view class="section-label">网球水平</view>
-      <view class="level-cards">
-        <view class="level-card {{level === 'beginner' ? 'level-card-active' : ''}}"
-          bindtap="selectLevel" data-value="beginner">
-          <text class="level-emoji">🌱</text>
-          <text class="level-name">新手</text>
-          <text class="level-range">2.0 - 2.5</text>
-        </view>
-        <view class="level-card {{level === 'intermediate' ? 'level-card-active' : ''}}"
-          bindtap="selectLevel" data-value="intermediate">
-          <text class="level-emoji">⚡</text>
-          <text class="level-name">进阶</text>
-          <text class="level-range">3.0 - 3.5</text>
-        </view>
-        <view class="level-card {{level === 'advanced' ? 'level-card-active' : ''}}"
-          bindtap="selectLevel" data-value="advanced">
-          <text class="level-emoji">🏆</text>
-          <text class="level-name">竞技</text>
-          <text class="level-range">4.0+</text>
+    <!-- NTRP 水平 -->
+    <view class="field-group">
+      <view class="field-label">NTRP 水平</view>
+      <view class="ntrp-grid">
+        <view wx:for="{{ntrpOptions}}" wx:key="value" wx:for-item="n"
+              class="ntrp-card {{ntrpLevel === n.value ? 'ntrp-active' : ''}}"
+              bindtap="selectNtrp" data-value="{{n.value}}">
+          <text class="ntrp-val">{{n.label}}</text>
+          <text class="ntrp-desc">{{n.desc}}</text>
         </view>
       </view>
     </view>
-
-    <!-- 可选信息展开 -->
-    <view class="optional-toggle" bindtap="toggleOptional">
-      <text class="optional-toggle-text">{{showOptional ? '收起详细信息' : '完善更多信息（可选）'}}</text>
-      <text class="optional-arrow">{{showOptional ? '↑' : '↓'}}</text>
-    </view>
-
-    <view wx:if="{{showOptional}}">
-
-      <!-- 常驻球场 -->
-      <view class="section">
-        <view class="section-label">常驻球场</view>
-        <view class="input-card">
-          <text class="input-prefix">📍</text>
-          <input class="input" placeholder="最常去的球场" value="{{homeBase}}" bindinput="onHomeBaseInput" />
-        </view>
-      </view>
-
-      <!-- 偏好打法 -->
-      <view class="section">
-        <view class="section-label">偏好形式</view>
-        <view class="chips-row">
-          <view wx:for="{{matchOptions}}" wx:key="index"
-            class="chip {{item.selected ? 'chip-active' : ''}}"
-            bindtap="selectMatchType" data-value="{{item.value}}">{{item.label}}</view>
-        </view>
-      </view>
-
-      <!-- 场地偏好 -->
-      <view class="section">
-        <view class="section-label">场地偏好</view>
-        <view class="chips-row">
-          <view wx:for="{{courtTypeOptions}}" wx:key="index"
-            class="chip {{item.selected ? 'chip-active' : ''}}"
-            bindtap="selectCourtType" data-value="{{item.value}}">{{item.label}}</view>
-        </view>
-      </view>
-
-      <!-- 打球风格 -->
-      <view class="section">
-        <view class="section-label">打球风格</view>
-        <view class="style-grid">
-          <view wx:for="{{styleOptions}}" wx:key="value"
-            class="style-card {{playStyle === item.value ? 'style-card-active' : ''}}"
-            bindtap="selectStyle" data-value="{{item.value}}">
-            <text class="style-name">{{item.label}}</text>
-            <text class="style-desc">{{item.desc}}</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 个性签名 -->
-      <view class="section">
-        <view class="section-label">个性签名 <text class="optional-label">选填</text></view>
-        <view class="textarea-card">
-          <textarea class="textarea" placeholder="说说你打球的故事..."
-            value="{{bio}}" bindinput="onBioInput" auto-height />
-        </view>
-      </view>
-
-    </view>
-
-    <button class="save-btn" bindtap="save" disabled="{{saving}}">
-      {{saving ? '保存中...' : isEdit ? '保存修改' : '完成设置 →'}}
-    </button>
-
   </view>
+
+  <!-- ══════════════════════════════
+       Step 2: 你的球
+       ══════════════════════════════ -->
+  <view wx:if="{{step === 2}}" class="step-view">
+    <view class="step-hd">
+      <view class="step-emoji">🎾</view>
+      <view class="step-title">你的球</view>
+      <view class="step-sub">填写你的实际水平</view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">最多能稳定对打多少拍？</view>
+      <view class="pill-list">
+        <view wx:for="{{rallyOptions}}" wx:key="*this" wx:for-item="r"
+              class="pill {{rallyCount === r ? 'pill-active' : ''}}"
+              bindtap="selectRally" data-value="{{r}}">{{r}}</view>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">你最稳定的技术 <text class="field-hint">可多选</text></view>
+      <view class="chip-wrap">
+        <view wx:for="{{strengthOptions}}" wx:key="*this" wx:for-item="s"
+              class="chip {{util.contains(strengths, s) ? 'chip-active' : ''}}"
+              bindtap="toggleStrength" data-value="{{s}}">{{s}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ══════════════════════════════
+       Step 3: 突破口
+       ══════════════════════════════ -->
+  <view wx:if="{{step === 3}}" class="step-view">
+    <view class="step-hd">
+      <view class="step-emoji">🎯</view>
+      <view class="step-title">突破口</view>
+      <view class="step-sub">记录你的训练方向</view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">最头疼的问题 <text class="field-hint">可多选</text></view>
+      <view class="chip-wrap">
+        <view wx:for="{{weaknessOptions}}" wx:key="*this" wx:for-item="w"
+              class="chip {{util.contains(weaknesses, w) ? 'chip-active' : ''}}"
+              bindtap="toggleWeakness" data-value="{{w}}">{{w}}</view>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">最想提升什么？ <text class="field-hint">可多选</text></view>
+      <view class="chip-wrap">
+        <view wx:for="{{goalOptions}}" wx:key="*this" wx:for-item="g"
+              class="chip {{util.contains(goals, g) ? 'chip-active' : ''}}"
+              bindtap="toggleGoal" data-value="{{g}}">{{g}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- ══════════════════════════════
+       Step 4: 状态
+       ══════════════════════════════ -->
+  <view wx:if="{{step === 4}}" class="step-view">
+    <view class="step-hd">
+      <view class="step-emoji">💪</view>
+      <view class="step-title">你的状态</view>
+      <view class="step-sub">让训练计划更贴合你的状态</view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">体能状态</view>
+      <view class="pill-list">
+        <view wx:for="{{fitnessOptions}}" wx:key="*this" wx:for-item="f"
+              class="pill {{fitnessLevel === f ? 'pill-active' : ''}}"
+              bindtap="selectFitness" data-value="{{f}}">{{f}}</view>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">伤病情况</view>
+      <view class="injury-toggle" bindtap="toggleHasInjury">
+        <view class="toggle-icon">{{hasInjury ? '✓' : '○'}}</view>
+        <text class="toggle-txt">目前有伤病需要注意</text>
+      </view>
+      <view class="chip-wrap" wx:if="{{hasInjury}}" style="margin-top:16rpx">
+        <view wx:for="{{injuryOptions}}" wx:key="*this" wx:for-item="i"
+              class="chip {{util.contains(injuries, i) ? 'chip-active' : ''}}"
+              bindtap="toggleInjury" data-value="{{i}}">{{i}}</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="bottom-bar">
+    <view class="back-btn" bindtap="prevStep">{{step === 1 ? '取消' : '上一步'}}</view>
+    <view class="next-btn" bindtap="nextStep">
+      {{step === 4 ? '完成建档 →' : '下一步'}}
+    </view>
+  </view>
+
 </view>

@@ -18,6 +18,18 @@
 | 0.0.8 | 2026-06-05 | 今日球报页（game-report）、index 分页（PAGE_SIZE=25，onReachBottom）、头像上传确认完整 |
 | 0.0.9 | 2026-06-05 | profile 主页社区化重设计（Hero 双向光晕、动态 Feed、本周节奏、球搭子关系称号）、pub-profile 适合一起打卡片、修复发起人退出 Bug、补全取消球局入口 |
 | 0.1.0 | 2026-06-08 | 首页 UI/逻辑修复 9 项、Tennis Mode 穿透 & 对比度修复、动态页发布者头像接入 players 集合 |
+| 0.1.1 | 2026-06-08 | 发帖页定位改为地图选择器（wx.chooseLocation），支持搜索任意球场，无需在球场附近 |
+| 0.1.2 | 2026-06-08 | 详情页新增球场导航入口（wx.openLocation）；审核文案优化：去除"社区"词汇，动态→记录 |
+| 0.1.3 | 2026-06-09 | 移除点赞/评论功能（审核驳回）；移除距离计算（getLocation 个人主体无权限）；配置 requiredPrivateInfos |
+| 0.1.4 | 2026-06-15 | AI 云函数 Bug 修复：generatePortrait OPENID guard、DB ID 方案统一（doc(OPENID).set()）、全链路超时上调至 90s |
+| 0.1.5 | 2026-06-15 | 成长页暗色主题完整重设计：新拟态统计面板、毛玻璃编辑按钮、Canvas 雷达图、荧光绿 CTA、AI 技能分析卡 |
+| 0.1.6 | 2026-06-15 | AI 教练个性化快速提问、删除本周训练计划模块、删除成就系统、"比赛回忆"改名"训练记录" |
+| 0.1.7 | 2026-06-16 | 修复 generatePortrait set() 覆盖问题：写入前先 get() 合并已有文档，保留 savePlayer 字段 |
+| 0.1.8 | 2026-06-16 | 应对审核驳回（深度合成技术）：移除所有 AI 功能，小程序回归纯工具定位 |
+| 0.1.9 | 2026-06-16 | 微信登录页 + 游客模式：新增 login 页采集微信头像/昵称，冷启动直接进首页，功能入口按需触发登录 |
+| 0.2.0 | 2026-06-16 | 成长页 UI 迭代：技能掌握度模块（左侧时长统计+右侧雷达图双栏）、今日状态移入模块、CTA 按钮 3:2 比例；雷达图 timeout 修复（单次 createSelectorQuery + 重试机制）；H5 AI 教练 Token 架构（generateAIToken 云函数 + 剪贴板链接）|
+| 0.2.1 | 2026-06-16 | 合规优化：运动记录页改为仅展示自己+球搭子内容（非陌生人公开流）；首页距离显示预置（getFuzzyLocation，待审批后生效）；组局页移除用户信息编辑入口，昵称/头像只在成长页修改；Tennis Mode 布局修复（min-height→height:100vh 解决 scroll-view 坍缩）|
+| 0.2.2 | 2026-06-17 | H5 AI 教练上线：GitHub Pages 静态托管 + Cloudflare Worker 转发 DeepSeek，小程序成长页直接将球员档案编码进 URL 生成链接；雷达图 timeout 再修复（setData 回调后触发绘制 + 延迟加长至 300/700/1500ms）；微信后台隐私指引补充「获取你的昵称」|
 
 ---
 
@@ -47,19 +59,26 @@ tennis-match/
 │   ├── index/              约球广场（TabBar 首页）
 │   ├── post/               发起球局
 │   ├── profile/            我的 / 球员档案（TabBar）
-│   ├── setup/              创建 / 编辑球员档案
+│   ├── setup/              创建 / 编辑球员档案（含 AI 画像生成）
 │   ├── detail/             球局详情 + 打卡海报生成
-│   └── tennis-mode/        Tennis Mode 沉浸式打球中页面
+│   ├── tennis-mode/        Tennis Mode 沉浸式打球中页面
+│   ├── login/              微信登录页（首次使用采集头像/昵称）
+│   ├── pub-profile/        他人公开主页
+│   ├── game-report/        今日球报（Tennis Mode 结束后跳转）
+│   └── feed/               运动记录 TabBar 页
 │
 └── cloudfunctions/
     ├── joinPost/           加入球局（含生命周期校验）
     ├── cancelJoin/         退出球局
     ├── cancelPost/         取消球局
     ├── getMyActivity/      获取我的球局记录（创建 + 参与）
-    ├── getPlayer/          获取球员档案
+    ├── getPlayer/          获取球员档案（支持按 nickname 查他人）
     ├── savePlayer/         保存 / 更新球员档案
     ├── getOpenId/          获取 OpenID（发起球局时使用）
-    └── sendNotice/         发送订阅消息通知
+    ├── sendNotice/         发送订阅消息通知
+    ├── getPublicProfile/   他人公开主页数据（stats 聚合）
+    ├── generatePortrait/   AI 球员画像生成（DeepSeek API）
+    └── askCoach/           AI 教练对话（DeepSeek API）
 ```
 
 ---
@@ -121,19 +140,29 @@ tennis-match/
   - `🎾 记录比分`：记录当前比分快照到 moments
   - `结束 →`：弹窗确认 → 写 `posts.manuallyEnded` + `endedAt` + `finalScore`
 
-### `pages/profile` — 我的 / 球员档案
+### `pages/login` — 微信登录（0.1.9 新增）
 
-- Hero 球员卡（头像色块 + 昵称 + 级别）
-- 统计数据：总场次、本月场次、连续天数
-- 常驻球场（按频次推算）
-- 常打球友（按合作次数排序，最多 5 人）
-- 最近 6 场球局时间线
-- 成就系统（6 个成就，基于统计解锁）
+- 首次使用时由功能页触发，通过 `navigateTo` 跳转（非强制冷启动拦截）
+- `open-type="chooseAvatar"` 整行按钮选取微信头像 → 上传至 Cloud Storage `avatars/`
+- `type="nickname"` 输入框，顶部浮现"使用微信昵称"快捷键
+- `wx.onNeedPrivacyAuthorization` + `open-type="agreePrivacyAuthorization"` 隐私授权弹窗
+- 支持 `?return=<encodedUrl>` 参数，登录完后跳转原目标页
+- 有页面栈时顶部显示「←」返回按钮
+
+### `pages/profile` — 成长（暗色主题，0.1.5 重设计）
+
+- **Hero 球员卡**：暗色渐变背景、新拟态双光晕、毛玻璃编辑按钮、Bio 引号斜体
+- **统计面板**（新拟态）：打球时长 / 本月场次 / 连续天数
+- **荧光绿 CTA**：约球按钮，`#B2FF33` 边框 + 发光阴影
+- **本周节奏**：7 天圆形格（空心/渐变填充）+ 连续天数 streak tag
+- **球搭子**：暗色卡片，点击跳公开主页，"再约"快捷发帖
+- **训练记录**（原"比赛回忆"）：最近 6 场球局时间线，可点击跳详情
+- Sheet 弹层（邀请、Day、留言）保持白色背景形成对比层次
 
 ### `pages/setup` — 球员档案编辑
 
-- 昵称、级别、打球风格、主场、自我介绍
-- 调用 `savePlayer` 云函数写入 `players` 集合
+- 4 步流程：头像昵称 → 水平问卷 → 风格偏好 → 完成建档
+- 调用 `savePlayer` 云函数写入 `players` 集合（含 ntrpLevel / strengths / weaknesses / goals 等问卷字段）
 
 ---
 
@@ -202,18 +231,63 @@ tennis-match/
 
 ### `players` 集合
 
+`_id` 固定为用户 OpenID（两个写入函数均用 `doc(OPENID).set()`），权限：所有人可读，仅创建者可写。
+
+字段分两组，分别由不同云函数写入：
+
+**基础档案字段**（由 `savePlayer` 写入）
+
 ```javascript
 {
-  _id,              // 即 OpenID
-  _openid,
-  nickname,
-  level,            // beginner / intermediate / advanced
+  _id,              // OpenID（doc key）
+  _openid,          // TCB 自动注入
+  nickname,         // 昵称
+  avatarUrl,        // 头像 Cloud Storage URL
+  level,            // beginner / intermediate / advanced（社区显示用）
   playStyle,        // steady / aggressive / allround / defensive
   homeBase,         // 主场
+  preferMatch,      // singles / doubles / any
+  preferCourt,      // hard / clay / grass
   bio,              // 自我介绍
-  avatarUrl         // 头像（预留）
+  updatedAt         // db.serverDate()
 }
 ```
+
+**AI 画像字段**（由 `generatePortrait` 写入，已修复 set() 覆盖问题：写前 get() 合并，0.1.7）
+
+```javascript
+{
+  // 建档问卷字段（同时保存，覆盖 savePlayer 中同名字段）
+  nickname,
+  avatarUrl,
+  ntrpLevel,        // '1.5' | '2.0' | '2.5' | '3.0' | '3.5' | '4.0' | '4.5'
+  rallyCount,       // 多拍能力描述，如 '5~10拍'
+  strengths,        // string[]，最稳定技术，如 ['正手', '发球']
+  weaknesses,       // string[]，主要问题，如 ['双反', '下网']
+  goals,            // string[]，训练目标，如 ['稳定对拉', '发球提升']
+  fitnessLevel,     // 体能状态描述
+  injuries,         // string[]，伤病，如 ['膝盖不适']
+
+  // DeepSeek 生成字段
+  aiPersonality,        // 性格标签，如 '稳定型底线建立者'
+  currentStage,         // 成长阶段，如 '稳定性建立期'
+  aiStrengths,          // string[]，AI 分析的优势
+  aiWeaknessSummary,    // 弱点总结（单条字符串）
+  aiTrainingFocus,      // 当前训练重点，如 '提前引拍 + 小碎步启动'
+  aiWeeklyPlan,         // 周训练计划，格式 '周二：XXX / 周四：YYY'
+  techScores: {         // 五维技术评分（0~100）
+    forehand,           // 正手
+    backhand,           // 反手
+    serve,              // 发球
+    footwork,           // 步伐
+    volley              // 截击
+  },
+  aiCoachNote,          // 教练点评（1~2句）
+  portraitGeneratedAt   // 生成时间戳（ms）
+}
+```
+
+> ✅ **0.1.7 已修复**：`generatePortrait` 写入前先 `get()` 已有文档，`Object.assign` 合并后再 `set()`，`_id/_openid` 写前 `delete`，不再覆盖 `savePlayer` 字段。
 
 ---
 
@@ -230,6 +304,8 @@ tennis-match/
 | `getOpenId` | 发起球局时 | 返回 OPENID（客户端无法直接获取）|
 | `sendNotice` | joinPost 成功后 | 发送订阅消息通知给发起者 |
 | `getPublicProfile` | 进入他人公开主页 | 按昵称查 players + 聚合近90天 posts 统计（totalHours/monthCount/frequentCourts/togetherCount），含管理员权限查 _openid |
+| `generatePortrait` | （暂停使用，0.1.8 移除入口）| 调用 DeepSeek API 生成 AI 球员画像，`doc(OPENID).set()` 写入 players；云函数保留供未来 H5 版本调用 |
+| `askCoach` | （暂停使用，0.1.8 移除入口）| 将对话历史 + 球员画像上下文传给 DeepSeek，流式返回教练回复；云函数保留供未来 H5 版本调用 |
 
 ---
 
@@ -537,6 +613,289 @@ if (event && event.nickname) {
 
 ---
 
+## 0.1.1 迭代记录（2026-06-08）
+
+### 发帖页定位优化
+
+**问题**：原方案为手动输入球场名 + "定位"按钮获取用户当前坐标（`wx.getLocation`）。用户发帖时往往不在球场附近，导致坐标不准或根本无法使用定位功能。
+
+**方案**：改用 `wx.chooseLocation`（高德地图选择器），用户可直接在地图上搜索任意球场名称并确认，locationName / locationAddress / locationLat / locationLng 四个字段一次性由地图返回，不依赖用户当前位置。
+
+| 文件 | 变更 |
+|------|------|
+| `post.js` | 移除 `locationPinned` 字段、`onLocationInput`、`pinLocation`；新增 `chooseLocation`（直接调 `wx.chooseLocation`）和 `clearLocation`；fail 回调区分 cancel / 权限拒绝 / 其他三种情况分别处理 |
+| `post.wxml` | "在哪打"区域替换为地图选择器卡片：空态（虚线，"点击选择球场"）/ 已选态（绿色边框，显示球场名 + 详细地址 + "换 ›"） |
+| `post.wxss` | 移除 `.loc-input-row` / `.loc-pin-btn` 等旧样式；新增 `.loc-picker` / `.loc-picker-empty` / `.loc-picker-filled` 等选择器卡片样式 |
+
+**数据兼容**：`posts` 集合字段结构不变（`locationName / locationAddress / locationLat / locationLng`），旧帖无坐标时距离不显示，向下兼容。
+
+---
+
+## 0.1.2 迭代记录（2026-06-08）
+
+### 详情页球场导航
+
+Hero 区球场名下新增"📍 查看位置 · 导航 ›"胶囊，仅当帖子有坐标（`locationLat/locationLng`）时显示。点击调用 `wx.openLocation` 打开微信内置地图，用户可选高德/百度/腾讯导航跳转。旧帖无坐标时胶囊不显示，向下兼容。
+
+| 文件 | 变更 |
+|------|------|
+| `detail.wxml` | hero-location 下方新增 `.hero-nav-chip`，`wx:if="{{post.locationLat}}"` |
+| `detail.js` | 新增 `openNavigation()`，调用 `wx.openLocation`，无坐标时 return |
+| `detail.wxss` | 新增 `.hero-nav-chip` / `.hero-nav-txt` / `.hero-nav-arr` 样式 |
+
+### 审核文案去社区化
+
+微信审核将小程序判定为"社区"类目，该类目不对个人开发者开放。调整文案将定位从社区改为个人运动记录工具。
+
+| 文件 | 改前 | 改后 |
+|------|------|------|
+| `app.json` TabBar | `动态` | `记录` |
+| `feed.wxml` header 大标题 | `动态` | `运动记录` |
+| `feed.wxml` header 副标题 | `TennisF 运动社区` | 删除 |
+| `feed.wxml` 空态标题 | `还没有动态` | `还没有记录` |
+| `feed.wxml` 列表底部 | `— 已加载全部动态 —` | `— 已加载全部 —` |
+
+> 功能逻辑不变，仅文案调整。提审时需同步修改开发者平台小程序简介，类目建议选"体育 > 运动健身"。
+
+---
+
+## 0.1.3 迭代记录（2026-06-09）
+
+### 审核驳回应对
+
+微信二次驳回原因：小程序含用户自行生成内容的发布/分享/交流，属社交范畴，个人主体不可用。
+
+**移除点赞 / 评论功能**
+
+| 文件 | 变更 |
+|------|------|
+| `feed.js` | 删除 `likeItem`、`openCommentSheet`、`closeCommentSheet`、`loadComments`、`onCommentInput`、`submitComment`、`isSynthetic`；清理 `likedItems`、`commentSheetOpen` 等相关 data 字段 |
+| `feed.wxml` | 移除三种卡片（photo/streak/achievement）的互动栏；删除评论 Sheet；图片/视频卡片保留"🎾 查看球局 ›"跳转链接 |
+| `feed.wxss` | 移除 `.fi-actions`、`.fi-act*`、`.fi-actions-hl`、评论 Sheet 全部样式；新增 `.fi-post-link` 跳转链接样式 |
+
+### 接口权限修复
+
+| 问题 | 处理 |
+|------|------|
+| `wx.getLocation` 个人主体无申请权限 | 移除 index.js 中全部距离计算逻辑（`_fetchUserLocation`、`userLat/userLng`、`_haversineKm`、`_distanceText`） |
+| `wx.chooseLocation` 未声明 | app.json 新增 `requiredPrivateInfos: ["chooseLocation"]`，`permission` desc 同步更新 |
+| 隐私协议位置信息用途 | 填写："用于在发起球局时选择并记录球场位置，其他球友可据此导航前往球场" |
+
+---
+
+## 0.1.4 修复记录（2026-06-15）
+
+### AI 云函数 Bug 修复
+
+**generatePortrait：OPENID guard**
+
+CLI 本地测试环境 `OPENID` 为 `undefined`，直接执行 DB 查询抛 `查询参数对象值不能均为undefined`。加 `if (OPENID)` guard，仅在真实用户环境执行 DB 写入。
+
+**generatePortrait：DB ID 方案统一**
+
+原实现用 `.add()` 自动生成 `_id`，而 `getPlayer` 用 `db.collection('players').doc(OPENID).get()` 查询（期望 `_id === OPENID`）。两者 ID 方案不匹配，导致重启后档案始终找不到。
+
+| 修改 | 前 | 后 |
+|------|----|----|
+| `generatePortrait/index.js` | `.where({ _openid: OPENID }).add()/.update()` | `doc(OPENID).set({ data: playerData })` |
+
+现在 `generatePortrait`、`savePlayer`、`getPlayer` 三个函数全部使用 `doc(OPENID)` 作为统一 key。
+
+**全链路超时上调至 90s**
+
+| 位置 | 前 | 后 |
+|------|----|-----|
+| `app.js` `wx.cloud.init({ timeout })` | 60000 | 90000 |
+| `setup.js` / `coach-chat.js` 单次调用 `config: { timeout }` | 60000 | 90000 |
+| `cloudbaserc.json` askCoach / generatePortrait 服务端 timeout | 60s | 90s |
+| `generatePortrait/index.js` HTTPS 请求超时 | 50000 | 75000 |
+| `askCoach/index.js` HTTPS 请求超时 | 50000 | 75000 |
+
+---
+
+## 0.1.5 迭代记录（2026-06-15）
+
+### 成长页（profile）暗色主题完整重设计
+
+**设计语言**
+
+| Token | 值 | 用途 |
+|-------|----|------|
+| Page BG | `#121C17` | 页面底色 |
+| Card BG | `#1A2820` | 卡片底色 |
+| Neon Green | `#B2FF33` | 高亮色（CTA、雷达图、streak）|
+| Brand Green | `#2BB673` | 辅助绿色 |
+
+**新拟态统计面板**
+
+```css
+.stats-board {
+  background: #1A2820;
+  box-shadow: 8rpx 8rpx 22rpx rgba(0,0,0,0.55), -3rpx -3rpx 10rpx rgba(255,255,255,0.04);
+}
+```
+
+**毛玻璃编辑按钮**
+
+```css
+.edit-btn-glass {
+  background: rgba(255,255,255,0.08);
+  backdrop-filter: blur(12px);
+  border: 1rpx solid rgba(255,255,255,0.15);
+}
+```
+
+**CTA 荧光绿发光按钮**
+
+```css
+.cta-glow-btn {
+  border: 1.5rpx solid #B2FF33;
+  box-shadow: 0 0 20rpx rgba(178,255,51,0.32);
+}
+```
+
+**本周节奏升级**
+
+- `.wd-off`：仅边框，空心圆
+- `.wd-on`：渐变填充 + 绿色阴影
+- streak tag：`background: linear-gradient(90deg, #FF6B2B, #FF3B3B)`
+
+**Canvas 雷达图**
+
+在 AI 技能分析卡内，`wx.createCanvasContext('radar', this)` 绘制五轴技能图：
+
+- 5 轴：正手 / 反手 / 发球 / 步伐 / 截击
+- 4 层同心多边形线框（透明度 0.15→0.05）
+- 数据多边形：`rgba(178,255,51,0.18)` 填充 + `rgba(178,255,51,0.82)` 描边
+- 数据点：`#B2FF33` 实心圆
+- `onShow` 后 150ms 延迟触发（等 DOM ready）
+
+**AI 技能分析卡结构**
+
+```
+AI 技能分析卡
+├── 标题行：卡片标题 + personality chip
+├── stage 文本
+├── 教练点评气泡（coachNote）
+├── 雷达图（canvas）
+└── 训练重点 pill（trainingFocus）
+```
+
+**白色 Sheet 保留**：邀请 Sheet、Day Sheet、留言 Sheet 均保持白色背景，与深色页面形成对比层次。
+
+---
+
+## 0.1.6 迭代记录（2026-06-15）
+
+### AI 教练个性化快速提问
+
+**问题**：快速提问为静态题库，与用户实际情况无关。
+
+**方案**：根据档案字段动态生成，优先级从高到低：
+
+1. `aiTrainingFocus` → "怎么有针对性地练习「{focus}」？"
+2. `weaknesses[]` → 每个短板对应 WEAKNESS_Q 中第一条
+3. `goals[]` → 每个目标对应 GOAL_Q 中第一条
+4. `ntrpLevel` → LEVEL_Q 对应的水平问题
+5. `weaknesses[]` 每个短板第二条（补深度）
+6. `goals[]` 每个目标第二条
+7. GENERAL_Q 通用兜底
+
+最终取 pool 前 8 题，显示时每次展示 4 题，"换一换"循环轮播。无档案时 fallback 至静态 FALLBACK_QUESTIONS。
+
+### 删除 AI 教练"本周训练计划"模块
+
+`coach.wxml` 完整删除本周训练计划 section（含 planDays 列表渲染）。`coach.js` 保留 `_parsePlan` 和 `planDays` 数据字段以备将来复用，前端不再展示。
+
+### 删除成就系统
+
+**影响面分析**：`feed.js` 已使用 `(cache.achievements || [])` 防守，空数组不影响动态 Feed 渲染。`activityCache` 保留 `achievements: []` 字段，向下兼容。
+
+| 删除内容 | 位置 |
+|---------|------|
+| `ALL_ACHIEVEMENTS`、`ACHIEVEMENT_CHECKS` 常量 | `profile.js` |
+| `achievements`、`pinnedAchievements`、`pinnedAchievList`、`earnedCount` data 字段 | `profile.js` |
+| achievement 处理块（loadActivity 内） | `profile.js` |
+| `onAchievTap`、`closeAchievSheet`、`togglePin` 方法 | `profile.js` |
+| 成就卡片、成就 Sheet、Hero 置顶成就行 | `profile.wxml` |
+
+### "比赛回忆"改名"训练记录"
+
+`profile.wxml` 第 198 行，节标题文字从"比赛回忆"改为"训练记录"，其余逻辑不变。
+
+---
+
+## 0.1.8 迭代记录（2026-06-16）
+
+### 移除所有 AI 功能（应对审核驳回）
+
+**背景**：微信审核以「深度合成技术（AI 问答）」驳回，个人主体不开放该类目。产品策略调整为：小程序保留纯工具能力，AI 教练功能后续通过独立 H5 实现。
+
+**移除内容**
+
+| 文件 / 页面 | 变更 |
+|------------|------|
+| `app.json` | 删除 `pages/coach/coach`、`pages/coach-chat/coach-chat`；TabBar `AI教练` → `记录(feed)` |
+| `pages/setup/setup` | 步骤从 5 步缩减至 4 步，删除第 5 步（AI 画像生成）；按钮文案 `生成 AI 画像 →` 改为 `完成建档 →`；`_generatePortrait` / `retryGenerate` 方法删除；`_saveAndFinish` 新增，直接调 `savePlayer` 保存全部问卷字段 |
+| `pages/setup/setup.wxml` | 删除步骤说明中所有"AI"字样 |
+| `pages/profile/profile` | 删除 `aiPortrait` 数据处理、`drawRadarChart` 方法；WXML 删除 AI 技能分析卡（雷达图、personality chip、教练点评气泡、训练重点 pill）|
+| `cloudfunctions/savePlayer` | 扩展接收问卷字段：ntrpLevel / rallyCount / strengths / weaknesses / goals / fitnessLevel / injuries（原 generatePortrait 负责保存，现由 savePlayer 兜底）|
+
+云函数 `generatePortrait` / `askCoach` 保留代码，供未来 H5 版本调用。
+
+---
+
+## 0.1.9 迭代记录（2026-06-16）
+
+### 微信登录页（pages/login）
+
+新增专属登录页，替代原有 `setup` 建档流程中的头像/昵称采集。
+
+**交互设计**
+
+- 整行按钮（头像圆圈 + "使用你的微信头像 →" 文字）使用 `open-type="chooseAvatar"`，点击任意位置均触发头像选择器
+- `type="nickname"` 输入框，微信键盘顶部出现「使用微信昵称」快捷键，一键填入
+- 隐私授权弹窗（底部 Sheet）：`open-type="agreePrivacyAuthorization"` 同意按钮 + 拒绝按钮，对应 `wx.onNeedPrivacyAuthorization` 回调
+
+**隐私合规**
+
+| 项 | 说明 |
+|----|------|
+| `wx.onNeedPrivacyAuthorization` | `app.js` onLaunch 注册，`_privacyResolve` / `_onPrivacyNeeded` 存 globalData |
+| 隐私弹窗 | login 页 `onLoad` 挂载回调，弹窗有 `open-type="agreePrivacyAuthorization"` 按钮 |
+| MP 后台配置 | 用户隐私保护指引新增：用户选择头像、用户昵称、相册写入（用途：保存球局分享海报至手机相册）|
+
+### 游客模式
+
+**app.js 变更**
+
+| 前 | 后 |
+|----|----|
+| `onLaunch` 检测无昵称 → `wx.reLaunch` 到 login | 无强制跳转，游客直接进首页 |
+| `requireProfile()` 弹 Modal → 跳 setup | `requireAuth(returnUrl)` 直接 `navigateTo` login 页，带 `?return=` 参数 |
+| `app.json` 第一页为 `pages/login/login` | 第一页改为 `pages/index/index` |
+
+**功能页鉴权**
+
+| 功能 | 触发方式 |
+|------|---------|
+| 组局 | `index.js` 调 `requireProfile()`（内部已改为跳 login）|
+| 加入球局 | `detail.js` 昵称为空时弹 `showNicknameSheet`（sheet 含头像/昵称采集）|
+| 发布动态 | `post.js` onLoad/onShow 预填；无昵称时 step1 顶部采集区引导填入 |
+
+**login 页登录后跳转**
+
+```javascript
+// confirm() 成功后：
+if (this._returnUrl) {
+  wx.redirectTo({ url: this._returnUrl })   // 有来源页 → 跳回目标
+} else {
+  wx.switchTab({ url: '/pages/index/index' }) // 直接进入 → 跳首页
+}
+```
+
+---
+
 ## 待办 / 已知问题
 
 - [x] Canvas 打卡海报：已迁移至 Canvas 2d API（0.0.4）
@@ -554,9 +913,28 @@ if (event && event.nickname) {
 - [x] 首页 Filter Tab 隐藏、Live Banner 间距、"已打"双重拼接、双打人数、0人兜底（0.1.0）
 - [x] Tennis Mode 底部栏穿透修复、辅助文字对比度提升、动态重复渲染竞态修复（0.1.0）
 - [x] 动态页发布者头像接入 players 集合，批量查询 avatarUrl（0.1.0）
-- [ ] 动态页评论区头像未接入真实 avatarUrl（仍用彩色首字母）
+- [x] 发帖页定位改为 wx.chooseLocation 地图选择器，去掉手动输入+获取当前位置方案（0.1.1）
+- [x] 详情页 Hero 区新增"查看位置 · 导航"胶囊，调用 wx.openLocation，有坐标时显示（0.1.2）
+- [x] feed 页文案去社区化："TennisF 运动社区"副标题删除，"动态"统一改为"记录"（0.1.2）
+- [x] feed 页移除点赞/评论功能，改为"查看球局"跳转链接（0.1.3）
+- [x] index.js 移除 wx.getLocation 距离计算（个人主体无权限），清理相关状态和工具函数（0.1.3）
+- [x] app.json 新增 requiredPrivateInfos: chooseLocation；permission desc 更新（0.1.3）
+- [x] generatePortrait OPENID guard + DB ID 方案统一为 doc(OPENID).set()，修复重启后档案消失（0.1.4）
+- [x] 全链路超时统一上调至 90s（client global / per-call / server-side / HTTPS req）（0.1.4）
+- [x] 成长页暗色主题完整重设计：新拟态、毛玻璃、Canvas 雷达图、荧光绿 CTA（0.1.5）
+- [x] AI 教练快速提问改为基于用户档案个性化生成，"换一换"循环轮播（0.1.6）
+- [x] 删除 AI 教练本周训练计划模块（0.1.6）
+- [x] 删除成就系统（profile 完整清理，feed.js 向下兼容）（0.1.6）
+- [x] "比赛回忆"→"训练记录"（0.1.6）
+- [x] `generatePortrait` 用 `set()` 全量覆盖 players 文档，会抹掉 `savePlayer` 字段；修复：写入前 `get()` 已有文档，`Object.assign` 合并后再 `set()`，TCB 内部字段（`_id/_openid`）写前 `delete`（0.1.7）
+- [x] 移除所有 AI 功能（coach / coach-chat 页面，setup AI 画像步骤，profile 雷达图）；云函数保留供未来 H5 调用（0.1.8）
+- [x] feed 页图片 500 错误：binderror 降级处理，头像失败显示首字母色块，动态图片失败从列表移除（0.1.8）
+- [x] post 页 step1 新增微信信息采集区（头像 + 昵称）；detail 页游客点「上车」弹昵称采集 Sheet（0.1.8）
+- [x] 新增 login 页（微信头像 + 昵称，隐私授权弹窗）；游客模式冷启动直接进首页；requireAuth 功能入口按需触发（0.1.9）
+- [x] MP 后台隐私保护指引新增：用户头像、用户昵称、相册写入（保存球局海报）（0.1.9）
 - [ ] `moments`/`avatars` 云存储安全规则：需控制台配置允许已登录用户上传（见下方说明）
 - [ ] 球搭子"约球"按钮目前仅跳转发帖页 + 预填备注，未来可做好友内消息通知闭环
+- [ ] H5 AI 教练：独立域名 + server，调用现有 askCoach / generatePortrait 云函数
 
 ---
 

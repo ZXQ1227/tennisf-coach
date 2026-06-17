@@ -11,23 +11,6 @@ var STYLE_LABEL = {
   steady: '稳健型', aggressive: '进攻型', allround: '全能型', defensive: '防守型'
 }
 
-var ALL_ACHIEVEMENTS = [
-  { icon: '🎾', name: '初出茅庐', desc: '完成第一场球局', key: 'first' },
-  { icon: '📣', name: '召集令', desc: '发起3场球局', key: 'org3' },
-  { icon: '🤝', name: '球友磁铁', desc: '结识3位球友', key: 'social3' },
-  { icon: '⚡', name: '常驻球员', desc: '累计参与10场', key: 'play10' },
-  { icon: '🌟', name: '月度之星', desc: '本月打球5场', key: 'monthly5' },
-  { icon: '🏆', name: '赛场老将', desc: '累计参与20场', key: 'play20' },
-]
-
-var ACHIEVEMENT_CHECKS = {
-  first: function(s) { return s.total >= 1 },
-  org3: function(s) { return s.created >= 3 },
-  social3: function(s) { return s.uniquePartners >= 3 },
-  play10: function(s) { return s.total >= 10 },
-  monthly5: function(s) { return s.monthly >= 5 },
-  play20: function(s) { return s.total >= 20 },
-}
 
 Page({
   data: {
@@ -39,11 +22,15 @@ Page({
     levelInfo: null,
     styleLabel: '',
     bio: '',
+    techScores: null,
     totalGames: 0,
     monthlyGames: 0,
     streak: 0,
     totalHoursNum: '0',
     totalHoursUnit: '小时',
+    totalHoursDisplay: '--',
+    hoursChangeStr: '',
+    hoursChangeColor: 'rgba(255,255,255,0.4)',
     lastActiveLabel: '',
     isActiveToday: false,
     homeCourt: '',
@@ -53,19 +40,16 @@ Page({
     noteSheetOpen: false,
     activeNotePartner: '',
     noteInput: '',
-    achievements: [],
-    pinnedAchievements: [],
-    pinnedAchievList: [],
     recentGames: [],
-    earnedCount: 0,
     weeklyDays: [],
     heatmapWeeks: [],
     showDaySheet: false,
     daySheetDate: '',
     daySheetGames: [],
-    showAchievSheet: false,
-    activeAchiev: null,
-    loading: true
+    loading: true,
+    invites: [],
+    inviteCount: 0,
+    showInviteSheet: false
   },
 
   onShow: function() {
@@ -76,10 +60,11 @@ Page({
     var avatarColor = nickname ? COLORS[nickname.charCodeAt(nickname.length - 1) % COLORS.length] : '#2BB673'
     var levelInfo = hasProfile ? (LEVEL_MAP[player.level] || LEVEL_MAP.intermediate) : null
     var styleLabel = hasProfile ? (STYLE_LABEL[player.playStyle] || '') : ''
-    var pinnedAchievements = wx.getStorageSync('pinnedAchievements') || []
-
     var likedPartners = wx.getStorageSync('likedPartners') || {}
     var partnerNotes = wx.getStorageSync('partnerNotes') || {}
+
+    var techScores = hasProfile ? this._computeTechScores(player) : null
+    var self = this
     this.setData({
       player: player || null,
       hasProfile: hasProfile,
@@ -89,16 +74,48 @@ Page({
       levelInfo: levelInfo,
       styleLabel: styleLabel,
       bio: (player && player.bio) || '',
-      pinnedAchievements: pinnedAchievements,
       likedPartners: likedPartners,
-      partnerNotes: partnerNotes
+      partnerNotes: partnerNotes,
+      techScores: techScores
+    }, function() {
+      if (techScores) self._drawRadarWithRetry(techScores, 0)
     })
     this.loadActivity()
+    if (hasProfile) this.loadInvites()
   },
 
   goSetup: function() { wx.navigateTo({ url: '/pages/setup/setup' }) },
   goEdit: function() { wx.navigateTo({ url: '/pages/setup/setup?mode=edit' }) },
   goPostTab: function() { wx.navigateTo({ url: '/pages/post/post' }) },
+
+  openAICoach: function() {
+    var H5_BASE = 'https://zxq1227.github.io/tennisf-coach/coach.html'
+    var player = app.globalData.player || {}
+    var fields = {
+      nickname: player.nickname,
+      avatarUrl: player.avatarUrl,
+      level: player.level,
+      ntrpLevel: player.ntrpLevel,
+      playStyle: player.playStyle,
+      strengths: player.strengths,
+      weaknesses: player.weaknesses,
+      goals: player.goals,
+      fitnessLevel: player.fitnessLevel,
+      injuries: player.injuries
+    }
+    var url = H5_BASE + '?p=' + encodeURIComponent(JSON.stringify(fields))
+    wx.setClipboardData({
+      data: url,
+      success: function() {
+        wx.showModal({
+          title: 'AI 教练',
+          content: '链接已复制\n请在手机浏览器粘贴访问',
+          showCancel: false,
+          confirmText: '知道了'
+        })
+      }
+    })
+  },
 
   goDetailFromTimeline: function(e) {
     var id = e.currentTarget.dataset.id
@@ -175,44 +192,43 @@ Page({
 
   closeDaySheet: function() { this.setData({ showDaySheet: false }) },
 
-  // ── Achievement ──
-
-  onAchievTap: function(e) {
-    var index = e.currentTarget.dataset.index
-    var a = this.data.achievements[index]
-    if (!a) return
-    var pinned = this.data.pinnedAchievements || []
-    this.setData({ showAchievSheet: true, activeAchiev: Object.assign({}, a, { pinned: pinned.indexOf(a.key) !== -1 }) })
-  },
-
-  closeAchievSheet: function() { this.setData({ showAchievSheet: false }) },
-
-  togglePin: function() {
-    var a = this.data.activeAchiev
-    if (!a || !a.earned) return
-    var pinned = (this.data.pinnedAchievements || []).slice()
-    var idx = pinned.indexOf(a.key)
-    if (idx === -1) {
-      if (pinned.length >= 3) { wx.showToast({ title: '最多置顶 3 个成就', icon: 'none' }); return }
-      pinned.push(a.key)
-    } else {
-      pinned.splice(idx, 1)
-    }
-    wx.setStorageSync('pinnedAchievements', pinned)
-    var isPinned = pinned.indexOf(a.key) !== -1
-    var achievements = this.data.achievements.map(function(ac) {
-      return Object.assign({}, ac, { pinned: pinned.indexOf(ac.key) !== -1 })
-    })
-    var pinnedAchievList = achievements.filter(function(ac) { return ac.earned && ac.pinned })
-    this.setData({
-      pinnedAchievements: pinned,
-      activeAchiev: Object.assign({}, a, { pinned: isPinned }),
-      achievements: achievements,
-      pinnedAchievList: pinnedAchievList
-    })
-  },
-
   noop: function() {},
+
+  // ── Invitations ──
+
+  loadInvites: async function() {
+    try {
+      var res = await wx.cloud.callFunction({ name: 'getInvitations' })
+      var invites = (res && res.result && res.result.invitations) || []
+      this.setData({ invites: invites, inviteCount: invites.length })
+    } catch(e) {}
+  },
+
+  openInviteSheet: function() { this.setData({ showInviteSheet: true }) },
+  closeInviteSheet: function() { this.setData({ showInviteSheet: false }) },
+
+  acceptInvite: async function(e) {
+    var inviteId = e.currentTarget.dataset.id
+    var fromNickname = e.currentTarget.dataset.from
+    try {
+      await wx.cloud.callFunction({ name: 'respondInvite', data: { inviteId: inviteId, action: 'accept' } })
+    } catch(e) {}
+    var invites = this.data.invites.filter(function(i) { return i._id !== inviteId })
+    this.setData({ invites: invites, inviteCount: invites.length, showInviteSheet: false })
+    wx.setStorageSync('postPrefillNote', '约 ' + fromNickname + ' 一起打')
+    wx.setStorageSync('postPrefillPartner', fromNickname)
+    wx.navigateTo({ url: '/pages/post/post' })
+  },
+
+  ignoreInvite: async function(e) {
+    var inviteId = e.currentTarget.dataset.id
+    try {
+      await wx.cloud.callFunction({ name: 'respondInvite', data: { inviteId: inviteId, action: 'ignore' } })
+    } catch(e) {}
+    var invites = this.data.invites.filter(function(i) { return i._id !== inviteId })
+    this.setData({ invites: invites, inviteCount: invites.length })
+    if (invites.length === 0) this.setData({ showInviteSheet: false })
+  },
 
   loadActivity: async function() {
     this.setData({ loading: true })
@@ -299,11 +315,25 @@ Page({
         dayMatchData[p.date].minutes += minutes
       })
 
-      var totalMinutes = 0
-      Object.keys(dayMatchData).forEach(function(k) { totalMinutes += dayMatchData[k].minutes })
+      var prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+      var prevMonthStr = prevMonthDate.getFullYear() + '-' + pad(prevMonthDate.getMonth() + 1)
+
+      var totalMinutes = 0, curMonthMinutes = 0, prevMonthMinutes = 0
+      Object.keys(dayMatchData).forEach(function(k) {
+        totalMinutes += dayMatchData[k].minutes
+        if (k.indexOf(monthStr) === 0) curMonthMinutes += dayMatchData[k].minutes
+        if (k.indexOf(prevMonthStr) === 0) prevMonthMinutes += dayMatchData[k].minutes
+      })
       var totalH = Math.floor(totalMinutes / 60)
       var totalHoursNum = totalH > 0 ? String(totalH) : String(totalMinutes)
       var totalHoursUnit = totalH > 0 ? '小时' : '分钟'
+      var totalHoursDisplay = totalH > 0 ? totalH + 'h' : totalMinutes + 'min'
+
+      var curMonthH = Math.round(curMonthMinutes / 60 * 10) / 10
+      var prevMonthH = Math.round(prevMonthMinutes / 60 * 10) / 10
+      var hoursChangeDelta = Math.round((curMonthH - prevMonthH) * 10) / 10
+      var hoursChangeStr = prevMonthMinutes === 0 ? '' : (hoursChangeDelta >= 0 ? '+' + hoursChangeDelta + 'h' : hoursChangeDelta + 'h')
+      var hoursChangeColor = hoursChangeDelta > 0 ? '#B2FF33' : hoursChangeDelta < 0 ? '#FF6B6B' : 'rgba(255,255,255,0.4)'
 
       // Games by date (for day sheet tap)
       var gamesByDate = {}
@@ -340,14 +370,6 @@ Page({
         }
         heatmapWeeks.push(week)
       }
-
-      var pinnedAchievements = this.data.pinnedAchievements || []
-      var stats = { total: totalGames, created: created.length, monthly: monthlyGames, uniquePartners: Object.keys(partnerCounts).length }
-      var achievements = ALL_ACHIEVEMENTS.map(function(a) {
-        return { icon: a.icon, name: a.name, desc: a.desc, key: a.key, earned: ACHIEVEMENT_CHECKS[a.key](stats), pinned: pinnedAchievements.indexOf(a.key) !== -1 }
-      })
-      var earnedCount = achievements.filter(function(a) { return a.earned }).length
-      var pinnedAchievList = achievements.filter(function(a) { return a.earned && a.pinned })
 
       var AVATAR_COLORS = ['#2BB673', '#4ECDC4', '#F7B731', '#A29BFE', '#FF6B6B']
       var recentGames = allRaw.slice(0, 8).map(function(p) {
@@ -502,9 +524,10 @@ Page({
       this.setData({
         totalGames: totalGames, monthlyGames: monthlyGames, streak: streak,
         totalHoursNum: totalHoursNum, totalHoursUnit: totalHoursUnit,
+        totalHoursDisplay: totalHoursDisplay,
+        hoursChangeStr: hoursChangeStr, hoursChangeColor: hoursChangeColor,
         lastActiveLabel: lastActiveLabel, isActiveToday: isActiveToday, homeCourt: homeCourt,
-        partners: partners, achievements: achievements, earnedCount: earnedCount,
-        pinnedAchievList: pinnedAchievList,
+        partners: partners,
         recentGames: recentGames, heatmapWeeks: heatmapWeeks,
         weeklyDays: weeklyDays, loading: false
       })
@@ -512,7 +535,7 @@ Page({
       app.globalData.activityCache = {
         nickname: nickname,
         streak: streak,
-        achievements: achievements,
+        achievements: [],
         partners: partners,
         updatedAt: Date.now(),
       }
@@ -521,6 +544,108 @@ Page({
       wx.showToast({ title: '加载失败', icon: 'none' })
       this.setData({ loading: false })
     }
+  },
+
+  _computeTechScores: function(player) {
+    if (player.techScores && player.techScores.forehand) return player.techScores
+    var NTRP_BASE = { '1.5': 20, '2.0': 30, '2.5': 38, '3.0': 52, '3.5': 63, '4.0': 75, '4.5': 85 }
+    var base = NTRP_BASE[player.ntrpLevel] || 40
+    var s = { forehand: base, backhand: base, serve: base, footwork: base, volley: base }
+    var strengthMap = { '正手': 'forehand', '反手': 'backhand', '发球': 'serve', '截击': 'volley', '步伐': 'footwork' }
+    ;(player.strengths || []).forEach(function(k) {
+      if (strengthMap[k]) s[strengthMap[k]] = Math.min(95, s[strengthMap[k]] + 20)
+    })
+    var weakMap = {
+      '步伐慢': { footwork: -20 }, '发球无力': { serve: -20 },
+      '下网': { forehand: -10, backhand: -10 }, '出界': { forehand: -10, backhand: -10 },
+      '不会上旋': { forehand: -15, backhand: -10 }, '心理紧张': { forehand: -5, backhand: -5, serve: -10 }
+    }
+    ;(player.weaknesses || []).forEach(function(k) {
+      var p = weakMap[k] || {}
+      Object.keys(p).forEach(function(ax) { s[ax] = Math.max(10, s[ax] + p[ax]) })
+    })
+    return s
+  },
+
+  _drawRadarWithRetry: function(scores, attempt) {
+    var self = this
+    var delays = [300, 700, 1500]
+    if (attempt >= delays.length) return
+    setTimeout(function() {
+      var query = wx.createSelectorQuery().in(self)
+      query.select('#radar').fields({ node: true, size: true }).exec(function(res) {
+        if (res && res[0] && res[0].node) {
+          self.drawRadarChart(res[0].node, res[0].width, res[0].height, scores)
+        } else {
+          self._drawRadarWithRetry(scores, attempt + 1)
+        }
+      })
+    }, delays[attempt])
+  },
+
+  drawRadarChart: function(canvas, W, H, scores) {
+      var dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
+      canvas.width = W * dpr; canvas.height = H * dpr
+      var ctx = canvas.getContext('2d')
+      ctx.scale(dpr, dpr)
+
+      var cx = W / 2, cy = H / 2 + 6, R = Math.min(W, H) * 0.30
+      var labels = ['正手', '反手', '发球', '步伐', '截击']
+      var keys   = ['forehand', 'backhand', 'serve', 'footwork', 'volley']
+      var N = 5
+      var angle = function(i) { return (i * 2 * Math.PI / N) - Math.PI / 2 }
+
+      // Grid rings
+      ctx.strokeStyle = 'rgba(178,255,51,0.15)'
+      ctx.lineWidth = 1
+      for (var ring = 1; ring <= 4; ring++) {
+        ctx.beginPath()
+        for (var i = 0; i < N; i++) {
+          var r = R * ring / 4
+          var x = cx + r * Math.cos(angle(i)), y = cy + r * Math.sin(angle(i))
+          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+        }
+        ctx.closePath(); ctx.stroke()
+      }
+
+      // Axes
+      ctx.strokeStyle = 'rgba(178,255,51,0.2)'
+      for (var i = 0; i < N; i++) {
+        ctx.beginPath()
+        ctx.moveTo(cx, cy)
+        ctx.lineTo(cx + R * Math.cos(angle(i)), cy + R * Math.sin(angle(i)))
+        ctx.stroke()
+      }
+
+      // Data polygon
+      ctx.beginPath()
+      for (var i = 0; i < N; i++) {
+        var v = Math.max(0, Math.min(100, scores[keys[i]] || 0)) / 100
+        var x = cx + R * v * Math.cos(angle(i)), y = cy + R * v * Math.sin(angle(i))
+        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
+      }
+      ctx.closePath()
+      ctx.fillStyle = 'rgba(178,255,51,0.18)'; ctx.fill()
+      ctx.strokeStyle = 'rgba(178,255,51,0.85)'; ctx.lineWidth = 2; ctx.stroke()
+
+      // Data dots
+      ctx.fillStyle = '#B2FF33'
+      for (var i = 0; i < N; i++) {
+        var v = Math.max(0, Math.min(100, scores[keys[i]] || 0)) / 100
+        var x = cx + R * v * Math.cos(angle(i)), y = cy + R * v * Math.sin(angle(i))
+        ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill()
+      }
+
+      // Labels
+      ctx.fillStyle = 'rgba(255,255,255,0.85)'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.font = 'bold 13px PingFang SC'
+      var pad = 28
+      for (var i = 0; i < N; i++) {
+        var a = angle(i)
+        var lx = cx + (R + pad) * Math.cos(a), ly = cy + (R + pad) * Math.sin(a)
+        ctx.fillText(labels[i], lx, ly)
+      }
   },
 
   loadRecentMedia: function(games) {

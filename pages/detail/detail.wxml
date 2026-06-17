@@ -10,6 +10,11 @@
     </view>
 
     <view class="hero-location">{{post.location}}</view>
+    <view wx:if="{{post.locationLat}}" class="hero-nav-chip" bindtap="openNavigation">
+      <text class="hero-nav-icon">📍</text>
+      <text class="hero-nav-txt">查看位置 · 导航</text>
+      <text class="hero-nav-arr">›</text>
+    </view>
 
     <view class="hero-time-row">
       <text class="hero-time-main">{{post.timeLabel}}</text>
@@ -227,7 +232,7 @@
 
   <!-- 可加入（招募中 / 即将开打） -->
   <view class="bottom-row" wx:else>
-    <input class="bottom-input" placeholder="你的昵称" value="{{myName}}" bindinput="onNameInput" />
+    <input class="bottom-input" type="nickname" placeholder="你的昵称" value="{{myName}}" bindinput="onNameInput" />
     <button class="{{post.bottomBtnClass}}" bindtap="join" disabled="{{joining}}">{{joining ? '加入中' : post.bottomBtnText}}</button>
   </view>
 
@@ -266,3 +271,22 @@
 </view>
 
 <canvas id="posterCanvas" type="2d" style="position:fixed;left:-2000px;top:0;width:375px;height:660px;"></canvas>
+
+<!-- 昵称采集 Sheet -->
+<view class="sheet-overlay" wx:if="{{showNicknameSheet}}" bindtap="closeNicknameSheet">
+  <view class="bottom-sheet ns-sheet" catchtap="noop">
+    <view class="sheet-handle"></view>
+    <view class="ns-title">先告诉我你是谁 🎾</view>
+    <view class="ns-body">
+      <button class="ns-av-btn" open-type="chooseAvatar" bindchooseavatar="onSheetChooseAvatar">
+        <image wx:if="{{sheetAvatarUrl}}" src="{{sheetAvatarUrl}}" class="ns-av-img" mode="aspectFill" />
+        <view wx:else class="ns-av-ph">
+          <text class="ns-av-initial">{{myName ? myName.slice(-1) : '📷'}}</text>
+        </view>
+      </button>
+      <input class="ns-input" type="nickname" placeholder="你的昵称"
+             value="{{myName}}" bindinput="onNicknameSheetInput" focus="{{showNicknameSheet}}" />
+    </view>
+    <view class="ns-confirm" bindtap="confirmNickname">确认加入 →</view>
+  </view>
+</view>

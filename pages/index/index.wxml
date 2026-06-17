@@ -2,10 +2,20 @@
 
   <!-- ── Header ── -->
   <view class="header">
-    <view class="greeting">Hi, {{nickname || '球友'}} 👋</view>
+    <view class="greeting">{{nickname ? nickname + ' 🎾' : '球友 🎾'}}</view>
     <view class="header-main-row">
-      <view class="question">今晚想打球吗？</view>
-      <view class="header-cta" bindtap="goPost">🎾 组个新局</view>
+      <view class="question">今天，继续变强</view>
+      <view class="header-cta" bindtap="goPost">组局</view>
+    </view>
+
+    <!-- AI 今日建议（有画像时显示）-->
+    <view class="ai-today-card" wx:if="{{aiTodayFocus}}" bindtap="goCoach">
+      <text class="ai-today-icon">🎯</text>
+      <view class="ai-today-info">
+        <text class="ai-today-label">AI 今日重点</text>
+        <text class="ai-today-val">{{aiTodayFocus}}</text>
+      </view>
+      <text class="ai-today-arr">→</text>
     </view>
 
     <!-- 有进行中球局时：Live Banner -->
@@ -15,7 +25,6 @@
       <text class="live-banner-arrow">→</text>
     </view>
     <view class="active-hint" wx:elif="{{activeCount > 0}}">{{activeCount}} 场球局正在招募</view>
-    <view class="active-hint empty" wx:else>暂无招募中的球局</view>
   </view>
 
   <!-- ── Filter Bar ── -->
@@ -49,7 +58,10 @@
       </view>
 
       <!-- 场地名 -->
-      <view class="lc-venue" bindtap="goDetail" data-id="{{post._id}}">{{post.location}}</view>
+      <view class="lc-venue" bindtap="goDetail" data-id="{{post._id}}">
+        {{post.location}}
+        <text class="lc-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
+      </view>
 
       <!-- 球员 & 标签 -->
       <view class="lc-meta" bindtap="goDetail" data-id="{{post._id}}">
@@ -134,7 +146,10 @@
         <view class="{{post.timeLabelClass}}">{{post.timeLabel}}</view>
       </view>
 
-      <view class="card-location">{{post.location}}</view>
+      <view class="card-location">
+        {{post.location}}
+        <text class="card-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
+      </view>
 
       <view class="card-tags" wx:if="{{post.levelInfo || post.courtLabel || post.matchLabel}}">
         <view class="tag tag-level" wx:if="{{post.levelInfo}}" style="color:{{post.levelInfo.color}}">{{post.levelInfo.label}}</view>

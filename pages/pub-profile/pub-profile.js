@@ -107,12 +107,34 @@ Page({
     wx.showToast({ title: e.currentTarget.dataset.desc, icon: 'none', duration: 2500 })
   },
 
-  inviteToGame: function() {
-    var name = this.partnerNickname
-    if (name) {
-      wx.setStorageSync('postPrefillNote', '约 ' + name + ' 一起打')
-      wx.setStorageSync('postPrefillPartner', name)
+  inviteToGame: async function() {
+    var toNickname = this.partnerNickname
+    var player = getApp().globalData.player
+    var myNickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
+
+    if (!myNickname) {
+      wx.showToast({ title: '请先创建球员档案', icon: 'none' })
+      return
     }
+
+    if (toNickname) {
+      wx.setStorageSync('postPrefillNote', '约 ' + toNickname + ' 一起打')
+      wx.setStorageSync('postPrefillPartner', toNickname)
+    }
+
+    try {
+      var res = await wx.cloud.callFunction({
+        name: 'sendInvite',
+        data: { toNickname: toNickname, fromNickname: myNickname }
+      })
+      var result = (res && res.result) || {}
+      if (result.ok && !result.duplicate) {
+        wx.showToast({ title: '已向 ' + toNickname + ' 发出约球邀请', icon: 'none', duration: 2000 })
+      }
+    } catch(e) {
+      // 发送失败不阻断跳转
+    }
+
     wx.navigateTo({ url: '/pages/post/post' })
   }
 })

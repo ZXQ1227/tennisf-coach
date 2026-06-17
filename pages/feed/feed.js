@@ -32,28 +32,17 @@ function gridClass(n) {
   return 'imgs-grid'
 }
 
-function isSynthetic(id) {
-  return !id || id.indexOf('streak_') === 0 || id.indexOf('achiev_') === 0 || id.indexOf('partner_') === 0
-}
-
 Page({
   data: {
     feedItems: [],
     loading: true,
     loadingMore: false,
     hasMore: true,
-    likedItems: {},
     skip: 0,
     nickname: '',
     avatarUrl: '',
     avatarColor: '#2BB673',
     avatarInitial: '我',
-    commentSheetOpen: false,
-    activeItemId: '',
-    activeItem: null,
-    commentInput: '',
-    comments: [],
-    commentsLoading: false,
     personalInjected: false,
   },
 
@@ -85,8 +74,26 @@ Page({
       avatarUrl: avatarUrl,
       avatarColor: colorFor(nickname),
       avatarInitial: nickname ? nickname.slice(-1) : '我',
-      likedItems: wx.getStorageSync('feedLikes') || {},
     })
+  },
+
+  _getPartnerNames: async function() {
+    var nickname = this.data.nickname || wx.getStorageSync('nickname') || ''
+    if (!nickname) return []
+    try {
+      var res = await db.collection('posts')
+        .where({ joiners: db.command.all([nickname]) })
+        .field({ joiners: true })
+        .limit(100)
+        .get()
+      var counts = {}
+      ;(res.data || []).forEach(function(p) {
+        ;(p.joiners || []).forEach(function(j) {
+          if (j !== nickname) counts[j] = (counts[j] || 0) + 1
+        })
+      })
+      return Object.keys(counts)
+    } catch(e) { return [] }
   },
 
   loadFeed: async function(fresh) {
@@ -97,11 +104,18 @@ Page({
     }
 
     var skip = fresh ? 0 : this.data.skip
-    var likedItems = this.data.likedItems
-
     try {
+      // 展示自己 + 球搭子内容
+      var myNickname = this.data.nickname || wx.getStorageSync('nickname') || ''
+      var partnerNames = await this._getPartnerNames()
+      var authors = myNickname ? [myNickname].concat(partnerNames) : partnerNames
+      if (!authors.length) {
+        this.setData({ feedItems: [], loading: false, loadingMore: false, hasMore: false })
+        return
+      }
+
       var momentRes = await db.collection('moments')
-        .where({ type: _.in(['photo', 'video']) })
+        .where({ type: _.in(['photo', 'video']), author: _.in(authors) })
         .orderBy('createdAt', 'desc')
         .skip(skip)
         .limit(PAGE_SIZE)
@@ -152,9 +166,6 @@ Page({
           hasVideo: m.type === 'video',
           videoUrl: m.videoUrl || '',
           videoCover: m.videoCover || (imgFull[0] || ''),
-          likeCount: m.likeCount || 0,
-          commentCount: m.commentCount || 0,
-          isLiked: !!likedItems[id],
           cardSize: imgDisplay.length >= 2 ? 'large' : 'normal',
         }
       })
@@ -180,7 +191,7 @@ Page({
       }
 
       if (fresh && !this.data.personalInjected) {
-        var personal = this.buildPersonalItems(likedItems)
+        var personal = this.buildPersonalItems()
         items = personal.concat(items)
         this.setData({ personalInjected: true })
       }
@@ -198,7 +209,7 @@ Page({
     }
   },
 
-  buildPersonalItems: function(likedItems) {
+  buildPersonalItems: function() {
     var cache = app.globalData.activityCache
     if (!cache) return []
     var nickname = cache.nickname || this.data.nickname
@@ -206,9 +217,8 @@ Page({
     var items = []
 
     if (cache.streak >= 3) {
-      var sid = 'streak_' + nickname
       items.push({
-        id: sid,
+        id: 'streak_' + nickname,
         type: 'streak',
         author: nickname,
         avatarColor: colorFor(nickname),
@@ -216,8 +226,6 @@ Page({
         timeAgo: '今天',
         streakDays: cache.streak,
         hlTitle: nickname + ' 连续打球 ' + cache.streak + ' 天',
-        likeCount: 0, commentCount: 0,
-        isLiked: !!likedItems[sid],
         cardSize: cache.streak >= 7 ? 'highlight' : 'normal',
       })
     }
@@ -225,9 +233,8 @@ Page({
     var earned = (cache.achievements || []).filter(function(a) { return a.earned })
     if (earned.length > 0) {
       var a = earned[earned.length - 1]
-      var aid = 'achiev_' + nickname + '_' + a.key
       items.push({
-        id: aid,
+        id: 'achiev_' + nickname + '_' + a.key,
         type: 'achievement',
         author: nickname,
         avatarColor: colorFor(nickname),
@@ -236,122 +243,11 @@ Page({
         achievIcon: a.icon,
         achievName: a.name,
         hlTitle: '解锁成就「' + a.name + '」',
-        likeCount: 0, commentCount: 0,
-        isLiked: !!likedItems[aid],
         cardSize: 'highlight',
       })
     }
 
     return items
-  },
-
-  likeItem: function(e) {
-    var id = e.currentTarget.dataset.id
-    if (!id) return
-    var liked = Object.assign({}, this.data.likedItems)
-    var wasLiked = !!liked[id]
-
-    var feedItems = this.data.feedItems.map(function(item) {
-      if (item.id !== id) return item
-      return Object.assign({}, item, {
-        isLiked: !wasLiked,
-        likeCount: wasLiked ? Math.max(0, item.likeCount - 1) : item.likeCount + 1,
-      })
-    })
-
-    if (wasLiked) { delete liked[id] } else { liked[id] = true }
-    wx.setStorageSync('feedLikes', liked)
-    this.setData({ feedItems: feedItems, likedItems: liked })
-
-    if (!isSynthetic(id)) {
-      db.collection('moments').doc(id).update({
-        data: { likeCount: _.inc(wasLiked ? -1 : 1) }
-      }).catch(function() {})
-    }
-  },
-
-  openCommentSheet: function(e) {
-    var id = e.currentTarget.dataset.id
-    var item = null
-    var feedItems = this.data.feedItems
-    for (var i = 0; i < feedItems.length; i++) {
-      if (feedItems[i].id === id) { item = feedItems[i]; break }
-    }
-    if (!item) return
-    this.setData({
-      commentSheetOpen: true, activeItemId: id, activeItem: item,
-      commentInput: '', comments: [],
-    })
-    this.loadComments(id)
-  },
-
-  closeCommentSheet: function() {
-    this.setData({ commentSheetOpen: false, activeItem: null, activeItemId: '' })
-  },
-
-  loadComments: async function(momentId) {
-    if (isSynthetic(momentId)) {
-      this.setData({ commentsLoading: false, comments: [] })
-      return
-    }
-    this.setData({ commentsLoading: true })
-    try {
-      var res = await db.collection('moments')
-        .where({ parentId: momentId })
-        .orderBy('createdAt', 'asc')
-        .limit(50)
-        .get()
-      var comments = (res.data || [])
-        .filter(function(c) { return c.type === 'comment' })
-        .map(function(c) {
-          var ts = c.createdAt && (c.createdAt.$date || c.createdAt)
-          return {
-            id: c._id,
-            author: c.author || '球友',
-            avatarColor: colorFor(c.author || ''),
-            avatarInitial: (c.author || '球').slice(-1),
-            content: c.content || '',
-            timeAgo: timeAgo(ts),
-          }
-        })
-      this.setData({ comments: comments, commentsLoading: false })
-    } catch(e) {
-      this.setData({ commentsLoading: false })
-    }
-  },
-
-  onCommentInput: function(e) {
-    this.setData({ commentInput: e.detail.value })
-  },
-
-  submitComment: async function() {
-    var content = (this.data.commentInput || '').trim()
-    if (!content) return
-    var nickname = this.data.nickname
-    if (!nickname) { wx.showToast({ title: '请先设置昵称', icon: 'none' }); return }
-    var id = this.data.activeItemId
-    if (isSynthetic(id)) { wx.showToast({ title: '暂不支持评论', icon: 'none' }); return }
-
-    try {
-      await db.collection('moments').add({
-        data: { parentId: id, type: 'comment', author: nickname, content: content, createdAt: db.serverDate() }
-      })
-      db.collection('moments').doc(id).update({
-        data: { commentCount: _.inc(1) }
-      }).catch(function() {})
-
-      var feedItems = this.data.feedItems.map(function(item) {
-        if (item.id !== id) return item
-        return Object.assign({}, item, { commentCount: item.commentCount + 1 })
-      })
-      var activeItem = this.data.activeItem
-        ? Object.assign({}, this.data.activeItem, { commentCount: this.data.activeItem.commentCount + 1 })
-        : null
-      this.setData({ feedItems: feedItems, activeItem: activeItem, commentInput: '' })
-      this.loadComments(id)
-    } catch(e) {
-      wx.showToast({ title: '评论失败，请重试', icon: 'none' })
-    }
   },
 
   previewImages: function(e) {
@@ -369,6 +265,30 @@ Page({
   goAuthor: function(e) {
     var name = e.currentTarget.dataset.name
     if (name) wx.navigateTo({ url: '/pages/pub-profile/pub-profile?nickname=' + encodeURIComponent(name) })
+  },
+
+  onAvatarError: function(e) {
+    var idx = e.currentTarget.dataset.index
+    var items = (this.data.feedItems || []).slice()
+    if (items[idx]) {
+      items[idx] = Object.assign({}, items[idx], { avatarUrl: '' })
+      this.setData({ feedItems: items })
+    }
+  },
+
+  onImgError: function(e) {
+    var itemIdx = e.currentTarget.dataset.itemIndex
+    var imgIdx = e.currentTarget.dataset.imgIndex
+    var items = (this.data.feedItems || []).slice()
+    if (items[itemIdx]) {
+      var display = (items[itemIdx].imagesDisplay || []).slice()
+      display.splice(imgIdx, 1)
+      items[itemIdx] = Object.assign({}, items[itemIdx], {
+        imagesDisplay: display,
+        hasImages: display.length > 0
+      })
+      this.setData({ feedItems: items })
+    }
   },
 
   noop: function() {},
