@@ -50,17 +50,6 @@
     </view>
   </view>
 
-  <!-- 自定义训练 -->
-  <view class="custom-train-row" bindtap="startFreeTraining">
-    <view class="custom-train-left">
-      <text class="custom-train-icon">📋</text>
-      <view class="custom-train-info">
-        <text class="custom-train-title">自定义训练</text>
-        <text class="custom-train-sub">创建属于你的训练计划</text>
-      </view>
-    </view>
-    <text class="custom-train-arrow">›</text>
-  </view>
 
   <!-- 实战训练入口 -->
   <view class="section-hd" style="margin-top:48rpx">
