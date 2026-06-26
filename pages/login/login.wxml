@@ -105,7 +105,7 @@
       <!-- 安全提示 -->
       <view class="privacy-row">
         <text class="privacy-shield">🛡</text>
-        <text class="privacy-txt">授权后将获取你的微信 OpenID{{"\\n"}}用于识别你的身份并保障账号安全</text>
+        <text class="privacy-txt">授权后将获取你的微信 OpenID{{"\n"}}用于识别你的身份并保障账号安全</text>
       </view>
 
 
