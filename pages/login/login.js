@@ -21,7 +21,7 @@ Page({
     var statusBarHeight = sysInfo.statusBarHeight || 44
     var menu = wx.getMenuButtonBoundingClientRect()
     var navHPx = 72 / 750 * sysInfo.windowWidth
-    var navTopPx = Math.round(menu.top + menu.height / 2 - navHPx / 2 - statusBarHeight)
+    var navTopPx = Math.round(menu.top + menu.height / 2 - navHPx / 2)
     this.setData({ statusBarHeight: statusBarHeight, navTopPx: navTopPx })
     var self = this
     app.globalData._onPrivacyNeeded = function() {
