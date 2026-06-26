@@ -9,7 +9,8 @@ Page({
     canGoBack: false,
     showNickBar: false,
     focusNick: false,
-    statusBarHeight: 44
+    statusBarHeight: 44,
+    navTopPx: 8
   },
 
   onLoad: function(options) {
@@ -17,7 +18,11 @@ Page({
     var pages = getCurrentPages()
     this.setData({ canGoBack: pages.length > 1 })
     var sysInfo = wx.getSystemInfoSync()
-    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 })
+    var statusBarHeight = sysInfo.statusBarHeight || 44
+    var menu = wx.getMenuButtonBoundingClientRect()
+    var navHPx = 72 / 750 * sysInfo.windowWidth
+    var navTopPx = Math.round(menu.top + menu.height / 2 - navHPx / 2 - statusBarHeight)
+    this.setData({ statusBarHeight: statusBarHeight, navTopPx: navTopPx })
     var self = this
     app.globalData._onPrivacyNeeded = function() {
       self.setData({ showPrivacy: true })
