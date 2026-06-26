@@ -114,7 +114,7 @@ Page({
   },
 
   goSquare: function() {
-    wx.navigateTo({ url: '/pages/training/training' })
+    wx.reLaunch({ url: '/pages/square/square' })
   },
 
   noop: function() {}
