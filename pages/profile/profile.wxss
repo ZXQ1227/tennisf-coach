@@ -823,6 +823,10 @@
 }
 .swing-last-date { font-size: 22rpx; color: rgba(255,255,255,0.5); }
 .swing-last-detail { font-size: 22rpx; color: rgba(255,255,255,0.35); line-height: 1.5; }
+.record-divider {
+  height: 1rpx; background: rgba(255,255,255,0.07);
+  margin: 24rpx 0 20rpx;
+}
 
 /* 球搭子横向滚动 */
 .partners-hscroll { display: flex; white-space: nowrap; }

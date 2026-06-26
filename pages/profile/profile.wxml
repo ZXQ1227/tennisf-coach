@@ -183,29 +183,14 @@
       </view>
     </view>
 
-    <!-- 训练日历 -->
+    <!-- 打球记录（挥拍数据 + 一周日历合并卡） -->
     <view class="home-card">
       <view class="home-card-hd" bindtap="goTrainingRecords">
-        <text class="home-card-title">训练日历</text>
-        <text class="home-card-more">本周训练 {{weeklyCount}} 次 ›</text>
+        <text class="home-card-title">打球记录</text>
+        <text class="home-card-more">本周 {{weeklyCount}} 次 ›</text>
       </view>
-      <view class="weekly-grid">
-        <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
-          <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
-          <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
-            <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
-          </view>
-          <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
-        </view>
-      </view>
-    </view>
 
-    <!-- 挥拍记录 -->
-    <view class="home-card">
-      <view class="home-card-hd">
-        <text class="home-card-title">挥拍记录</text>
-        <text class="home-card-sub-info" wx:if="{{swingStats.sessions > 0}}">{{swingStats.sessions}} 次训练</text>
-      </view>
+      <!-- 挥拍摘要 -->
       <view wx:if="{{swingStats.sessions > 0}}" class="swing-summary-row">
         <view class="swing-summary-item">
           <view class="swing-summary-val">{{swingTotal}}</view>
@@ -223,6 +208,20 @@
       <view wx:else class="swing-empty">
         <text class="swing-empty-icon">⌚</text>
         <text class="swing-empty-txt">完成训练后可上报手表挥拍数据</text>
+      </view>
+
+      <!-- 分割线 -->
+      <view class="record-divider"></view>
+
+      <!-- 一周日历 -->
+      <view class="weekly-grid">
+        <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
+          <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
+          <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
+            <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
+          </view>
+          <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
+        </view>
       </view>
     </view>
 
