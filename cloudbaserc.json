@@ -4,6 +4,7 @@
   "functions": [
     { "name": "askCoach",         "timeout": 90, "runtime": "Nodejs18.15" },
     { "name": "generatePortrait", "timeout": 90, "runtime": "Nodejs18.15" },
+    { "name": "h5AskCoach",       "timeout": 60, "runtime": "Nodejs16.13" },
     { "name": "sendInvite",       "timeout": 20, "runtime": "Nodejs18.15" },
     { "name": "getInvitations",   "timeout": 20, "runtime": "Nodejs18.15" },
     { "name": "respondInvite",    "timeout": 20, "runtime": "Nodejs18.15" },
