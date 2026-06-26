@@ -46,9 +46,9 @@ Page({
   onChooseAvatar: function(e) {
     var tempUrl = e.detail.avatarUrl
     var self = this
-    this.setData({ avatarUrl: tempUrl, showNickBar: true })
-    // 延迟触发聚焦，确保昵称条已渲染
-    setTimeout(function() { self.setData({ focusNick: true }) }, 150)
+    this.setData({ avatarUrl: tempUrl, showNickBar: true, focusNick: true })
+    // 渲染稳定后复位，避免后续 setData 重复触发聚焦
+    setTimeout(function() { self.setData({ focusNick: false }) }, 600)
     wx.cloud.uploadFile({
       cloudPath: 'avatars/' + Date.now() + '.jpg',
       filePath: tempUrl,
@@ -60,9 +60,7 @@ Page({
     })
   },
 
-  onNickFocus: function() {
-    this.setData({ focusNick: false })
-  },
+  onNickFocus: function() {},
 
   onNicknameInput: function(e) {
     this.setData({ nickname: e.detail.value })
