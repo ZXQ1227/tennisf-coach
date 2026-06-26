@@ -10,7 +10,8 @@ Page({
     showNickBar: false,
     focusNick: false,
     statusBarHeight: 44,
-    navTopPx: 8
+    navTopPx: 8,
+    kbOffset: 0
   },
 
   onLoad: function(options) {
@@ -30,6 +31,13 @@ Page({
     if (app.globalData._privacyResolve) {
       this.setData({ showPrivacy: true })
     }
+    wx.onKeyboardHeightChange(function(res) {
+      self.setData({ kbOffset: res.height })
+    })
+  },
+
+  onUnload: function() {
+    wx.offKeyboardHeightChange()
   },
 
   onAgreePrivacy: function() {

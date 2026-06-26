@@ -22,7 +22,7 @@
   <view class="content" style="padding-top:{{statusBarHeight}}px">
 
     <!-- 返回按钮 -->
-    <view class="nav-back" wx:if="{{canGoBack}}" bindtap="goBack" style="top: {{navTopPx}}px;">
+    <view class="nav-back" wx:if="{{canGoBack}}" bindtap="goBack" style="top: {{navTopPx + kbOffset}}px;">
       <text class="nav-back-icon">←</text>
     </view>
 
