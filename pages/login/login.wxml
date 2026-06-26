@@ -12,42 +12,103 @@
     </view>
   </view>
 
-  <view class="nav-back" bindtap="goBack" wx:if="{{canGoBack}}">
-    <text class="nav-back-icon">←</text>
-  </view>
+  <!-- 背景图 -->
+  <image class="bg-img" src="/images/login-bg.jpg" mode="aspectFill" />
 
-  <view class="brand">
-    <text class="brand-logo">🎾</text>
-    <text class="brand-name">TennisF</text>
-    <text class="brand-sub">你的网球运动记录</text>
-  </view>
+  <!-- 渐变遮罩：顶部深色→中间透明→底部微暗 -->
+  <view class="bg-overlay" />
 
-  <view class="card">
+  <!-- 主内容层 -->
+  <view class="content" style="padding-top:{{statusBarHeight}}px">
 
-    <!-- 头像 -->
-    <view class="section-label">头像</view>
-    <button class="av-row" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
-      <view class="av-circle">
-        <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="av-img" mode="aspectFill" />
-        <view wx:else class="av-ph">
-          <text class="av-ph-icon">📷</text>
+    <!-- 返回按钮 -->
+    <view class="nav-back" wx:if="{{canGoBack}}" bindtap="goBack">
+      <text class="nav-back-icon">←</text>
+    </view>
+
+    <!-- 品牌区 -->
+    <view class="brand-section">
+      <text class="brand-name">TennisF</text>
+      <view class="brand-tagline">
+        <text class="tagline-plain">记录每一次挥拍的</text><text class="tagline-accent">成长</text>
+      </view>
+      <text class="brand-sub">你的网球运动记录与成长伙伴</text>
+    </view>
+
+    <!-- 弹性占位（球的可见区） -->
+    <view class="flex-spacer" />
+
+    <!-- 底部卡片 -->
+    <view class="bottom-card">
+
+      <!-- 特性三列 -->
+      <view class="features-row">
+        <view class="feat-item">
+          <view class="feat-icon-wrap">
+            <view class="icon-chart">
+              <view class="bar b1"></view>
+              <view class="bar b2"></view>
+              <view class="bar b3"></view>
+              <view class="bar-dot"></view>
+            </view>
+          </view>
+          <text class="feat-name">成长数据</text>
+          <text class="feat-desc">记录每一场球局</text>
+        </view>
+        <view class="feat-item">
+          <view class="feat-icon-wrap">
+            <view class="icon-people">
+              <view class="ph ph1"></view><view class="pb pb1"></view>
+              <view class="ph ph2"></view><view class="pb pb2"></view>
+            </view>
+          </view>
+          <text class="feat-name">球友关系</text>
+          <text class="feat-desc">找到固定球搭子</text>
+        </view>
+        <view class="feat-item">
+          <view class="feat-icon-wrap">
+            <view class="icon-trophy">
+              <view class="trophy-cup"></view>
+              <view class="trophy-stem"></view>
+              <view class="trophy-base"></view>
+            </view>
+          </view>
+          <text class="feat-name">成就系统</text>
+          <text class="feat-desc">解锁专属运动称号</text>
         </view>
       </view>
-      <text class="av-hint">使用你的微信头像 →</text>
-    </button>
 
-    <!-- 昵称 -->
-    <view class="section-label" style="margin-top:40rpx">昵称</view>
-    <input class="nickname-input" type="nickname"
-           placeholder="点击选择微信昵称"
-           value="{{nickname}}" bindinput="onNicknameInput" />
-    <text class="nickname-hint">点击输入框，顶部会出现「使用微信昵称」</text>
+      <!-- 登录按钮：头像选完后用等高占位替换，保持卡片高度不变 -->
+      <button wx:if="{{!showNickBar}}" class="login-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
+        <view class="wc-icon">
+          <view class="wc-bubble wc-main"></view>
+          <view class="wc-bubble wc-sec"></view>
+        </view>
+        <text class="login-btn-txt">微信授权登录</text>
+      </button>
 
+      <!-- 原位昵称编辑区 -->
+      <view wx:else class="inline-nick">
+        <image src="{{avatarUrl}}" class="in-av" mode="aspectFill" />
+        <input class="in-input" type="nickname"
+               placeholder="点击选择微信昵称"
+               placeholder-class="in-ph"
+               value="{{nickname}}" bindinput="onNicknameInput"
+               focus="{{focusNick}}" bindfocus="onNickFocus" />
+        <view class="in-btn {{(!nickname || saving) ? 'in-btn-dim' : ''}}" bindtap="confirm">
+          {{saving ? '…' : '进入'}}
+        </view>
+      </view>
+
+      <!-- 安全提示 -->
+      <view class="privacy-row">
+        <text class="privacy-shield">🛡</text>
+        <text class="privacy-txt">授权后将获取你的微信 OpenID{{"\\n"}}用于识别你的身份并保障账号安全</text>
+      </view>
+
+
+    </view>
   </view>
 
-  <button class="confirm-btn {{nickname ? '' : 'confirm-disabled'}}"
-          bindtap="confirm" disabled="{{saving}}">
-    {{saving ? '正在进入...' : '进入 TennisF →'}}
-  </button>
 
 </view>

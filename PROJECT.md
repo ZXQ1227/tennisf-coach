@@ -30,6 +30,21 @@
 | 0.2.0 | 2026-06-16 | 成长页 UI 迭代：技能掌握度模块（左侧时长统计+右侧雷达图双栏）、今日状态移入模块、CTA 按钮 3:2 比例；雷达图 timeout 修复（单次 createSelectorQuery + 重试机制）；H5 AI 教练 Token 架构（generateAIToken 云函数 + 剪贴板链接）|
 | 0.2.1 | 2026-06-16 | 合规优化：运动记录页改为仅展示自己+球搭子内容（非陌生人公开流）；首页距离显示预置（getFuzzyLocation，待审批后生效）；组局页移除用户信息编辑入口，昵称/头像只在成长页修改；Tennis Mode 布局修复（min-height→height:100vh 解决 scroll-view 坍缩）|
 | 0.2.2 | 2026-06-17 | H5 AI 教练上线：GitHub Pages 静态托管 + Cloudflare Worker 转发 DeepSeek，小程序成长页直接将球员档案编码进 URL 生成链接；雷达图 timeout 再修复（setData 回调后触发绘制 + 延迟加长至 300/700/1500ms）；微信后台隐私指引补充「获取你的昵称」|
+| 0.2.3 | 2026-06-17 | 审核驳回修复：setup 页补充隐私授权弹窗（从成长页进入时 chooseAvatar 静默卡死）；「AI 教练」→「教练助手」+导航栏「AI 球员档案」→「球员档案」规避深度合成技术驳回；教练助手按钮改为先弹 modal 再写剪贴板，解决 setClipboardData 回调在真机静默丢失问题|
+| 0.2.4 | 2026-06-18 | pub-profile 移除遗留荣誉勋章模块；feed 页全量重构为 Keep 风格沉浸式行动仪表盘（暗色全屏/网球场底纹背景、三模式 Tab、GO 按钮呼吸动效、自由训练页内计时器、计分比赛直通 tennis-mode、底部历史抽屉）；Tab Bar 深色化（`#0D1F16` + 荧光绿选中色）|
+| 0.2.5 | 2026-06-18 | 装备模块：新增 `pages/gear` 页（球拍/球鞋/运动设备三分区，底部抽屉增删改表单）+ `saveGear` 云函数；`post.js` 新增 `autoTennisMode` 参数，建局成功后直跳 tennis-mode；feed 装备按钮从 toast 改为跳装备页|
+| 0.2.6 | 2026-06-18 | 修复 chooseLocation 真机无反馈：post 页补挂 `_onPrivacyNeeded` 回调，首次调用地图前弹隐私授权 sheet；Tab Bar 重命名：训练→约球、记录→训练 |
+| 0.2.7 | 2026-06-18 | 成长页"训练记录"改为"挥拍记录"（正反手总量、比例条、上次记录）；自由训练结束后弹挥拍数据上报 sheet；新增 `saveSwingStats` 云函数（累加写入 `players.swingStats`）|
+| 0.2.8 | 2026-06-18 | 云存储权限修复：新增 `getTempUrls` 云函数（管理员权限批量转换 cloud:// 为临时 HTTPS URL），feed 加载时自动转换图片/头像/视频封面，解决球搭子照片无法加载问题 |
+| 0.2.9 | 2026-06-18 | 挥拍数据扩展为四维：新增发球（sv）、截击（vl）上报；`saveSwingStats` 云函数同步记录 `swingHistory`（每条含时间戳，保留最近 90 条）；成长页挥拍记录模块替换为本周累计趋势折线图（Canvas 2D，Catmull-Rom 平滑曲线+渐变填充+未来日期灰色遮罩）；挥拍记录移至球搭子上方；CTA 按钮文案调整：约球→训练、教练助手→教练 |
+| 0.3.0 | 2026-06-18 | 产品架构重构：移除 TabBar，成长页升为独立首页（自定义导航栏 + 问候区 + 数据统计行 + 档案雷达卡 + 训练/教练入口卡 + 训练日历 + 挥拍摘要 + 球搭子横滚）；新建训练二级页（`pages/training`，含推荐计划 Banner、技术训练 2×3 网格、实战训练入口）；约球广场、feed 训练页改为二级导航；所有 `switchTab` 改为 `navigateTo`/`navigateBack`/`reLaunch` |
+| 0.3.1 | 2026-06-18 | 雷达图 canvas 漂移修复：画完后 `canvasToTempFilePath` 导出图片，canvas 移至屏幕外，scroll-view 中改用 `<image>` 展示，消除原生层漂移问题 |
+| 0.3.2 | 2026-06-18 | 合规文案清理：移除表层所有"AI"、"智能"前缀及"Beta"标签（profile 首页、training 页、coach-chat、coach 页面及其 json） |
+| 0.3.3 | 2026-06-22 | 训练模块架构调整：去除"自由训练"/"组局比赛" Tab，训练页默认展示自由训练内容；新建球局广场三级页（`pages/square`），含"发现球局"+"我的球局"两 Tab；训练页三个入口（查看更多/我的球局/发现球局）均跳转 square 页对应 Tab；canvas timeout 根治（移除 `canvasToTempFilePath` 离屏导出，雷达图直接以 in-flow canvas 渲染）；新增 profile onShow 30s 防抖、loadActivity 静默失败 |
+| 0.3.4 | 2026-06-22 | 球局广场体验修复：移除自定义导航栏（改用原生 navigationBarTitleText），消除双返回按钮；Tab 栏右侧集成"发起球局"按钮；两 Tab 空状态统一（图标+文案+发起按钮）；发帖成功后改为 navigateBack 返回球局广场，不再强制跳训练页 |
+| 0.3.5 | 2026-06-22 | 训练四页全链路重设计：training-prep（AI教练卡+目标列表+四种训练模式+音乐/GO/装备底栏）；training-session（GPS/心率/卡路里状态栏+虚线计时框+动效视觉区+Swiper统计+三按钮底栏）；training-summary（新页，六边形评分+四项数据+心率Canvas图+AI复盘→coach-chat+目标完成进度条）；training-records（新页，月历网格+绿环训练标记+月统计+日详情列表）；profile 训练日历区域点击跳转 training-records；训练链路：prep→session→summary(redirectTo)→再来一练(navigateBack×2)/查看记录 |
+| 0.3.6 | 2026-06-22 | 表现层"AI"字样全清：training-prep"AI教练"→"教练"、training-session"AI教练提示"→"教练提示"、training-summary"AI复盘"→"训练复盘"、模式列表三处"AI"改为"智能/实时"；askCoach 云函数修复：超时从 30s 升至 60s、DeepSeek 请求超时降至 50s（解决函数被平台 kill 问题）、新增 HTTP 状态码检查与详细错误日志；curl 确认 API key 已失效（待换新 key） |
+| 1.1.2 | 2026-06-22 | **审核合规 + 首页重设计**。合规：`coach-chat` 从 app.json 移除，所有入口（profile/index/training-summary）改为生成 H5 链接→剪贴板；`pages/index`（老约球广场）从 app.json 移除；废弃页面目录清除（feed/coach/coach-chat/index）；训练链路三页 🤖 emoji 替换为 🎾，注释中"AI"字样清理。首页：昵称后 👋→✎ 编辑图标（scaleX 镜像）；球员档案卡移除"查看详情 ›"；开始训练卡重设计为全宽深绿沉浸卡（运动员背景图 + 绿色径向光晕 + 实心绿圆箭头）；教练卡重设计为深蓝沉浸卡（🧠 + Beta 徽章 + 暗色圆箭头）；两卡改为同行并排；训练卡绿色突出描边，教练卡蓝紫弱化描边；教练卡标题"AI 教练"→"教练" |
 
 ---
 
@@ -52,20 +67,22 @@
 ```
 tennis-match/
 ├── app.js                  全局逻辑：云初始化、processPost、状态机、时间格式化
-├── app.json                页面注册、TabBar 配置
+├── app.json                页面注册（无 TabBar，首页为 profile）
 ├── app.wxss                全局样式（空，各页面独立样式）
 │
 ├── pages/
-│   ├── index/              约球广场（TabBar 首页）
+│   ├── index/              约球广场（二级页，从训练页进入）
 │   ├── post/               发起球局
-│   ├── profile/            我的 / 球员档案（TabBar）
+│   ├── profile/            首页（成长仪表盘，0.3.0 重设计为无 TabBar 入口页）
 │   ├── setup/              创建 / 编辑球员档案（含 AI 画像生成）
 │   ├── detail/             球局详情 + 打卡海报生成
 │   ├── tennis-mode/        Tennis Mode 沉浸式打球中页面
 │   ├── login/              微信登录页（首次使用采集头像/昵称）
 │   ├── pub-profile/        他人公开主页
 │   ├── game-report/        今日球报（Tennis Mode 结束后跳转）
-│   └── feed/               运动记录 TabBar 页
+│   ├── feed/               自由训练仪表盘（Keep 风格，三模式，二级页）
+│   ├── training/           训练二级页（推荐计划 + 技术训练网格 + 实战入口，0.3.0 新增）
+│   └── gear/               装备管理页（球拍/球鞋/运动设备）
 │
 └── cloudfunctions/
     ├── joinPost/           加入球局（含生命周期校验）
@@ -74,6 +91,7 @@ tennis-match/
     ├── getMyActivity/      获取我的球局记录（创建 + 参与）
     ├── getPlayer/          获取球员档案（支持按 nickname 查他人）
     ├── savePlayer/         保存 / 更新球员档案
+    ├── saveGear/           保存装备数据（update players.gear 字段）
     ├── getOpenId/          获取 OpenID（发起球局时使用）
     ├── sendNotice/         发送订阅消息通知
     ├── getPublicProfile/   他人公开主页数据（stats 聚合）
@@ -253,6 +271,35 @@ tennis-match/
 }
 ```
 
+**挥拍统计字段**（由 `saveSwingStats` 写入，0.2.7 新增）
+
+```javascript
+{
+  swingStats: {
+    fhTotal: 5230,      // 正手累计挥拍次数
+    bhTotal: 4180,      // 反手累计挥拍次数
+    sessions: 12,       // 已上报训练次数
+    lastSession: {
+      fh: 380,          // 上次正手
+      bh: 290,          // 上次反手
+      date: serverDate  // 上次上报时间
+    }
+  }
+}
+```
+
+**装备字段**（由 `saveGear` 写入，0.2.5 新增）
+
+```javascript
+{
+  gear: {
+    rackets: [{ id, brand, model, weight, tension, notes, isPrimary }],
+    shoes:   [{ id, brand, model, notes, isPrimary }],
+    devices: [{ id, type, label }]   // type: 'apple_watch'|'garmin'|'huawei'|'suunto'|'polar'|'other'
+  }
+}
+```
+
 **AI 画像字段**（由 `generatePortrait` 写入，已修复 set() 覆盖问题：写前 get() 合并，0.1.7）
 
 ```javascript
@@ -304,6 +351,8 @@ tennis-match/
 | `getOpenId` | 发起球局时 | 返回 OPENID（客户端无法直接获取）|
 | `sendNotice` | joinPost 成功后 | 发送订阅消息通知给发起者 |
 | `getPublicProfile` | 进入他人公开主页 | 按昵称查 players + 聚合近90天 posts 统计（totalHours/monthCount/frequentCourts/togetherCount），含管理员权限查 _openid |
+| `saveGear` | 装备页保存操作 | `doc(OPENID).update({ gear })` 仅更新 gear 字段，不影响其他档案字段（0.2.5 新增）|
+| `saveSwingStats` | 自由训练结束上报 | 读取现有 `swingStats` 累加正反手次数后写回，`sessions+1`，更新 `lastSession`（0.2.7 新增）|
 | `generatePortrait` | （暂停使用，0.1.8 移除入口）| 调用 DeepSeek API 生成 AI 球员画像，`doc(OPENID).set()` 写入 players；云函数保留供未来 H5 版本调用 |
 | `askCoach` | （暂停使用，0.1.8 移除入口）| 将对话历史 + 球员画像上下文传给 DeepSeek，流式返回教练回复；云函数保留供未来 H5 版本调用 |
 
@@ -932,9 +981,20 @@ if (this._returnUrl) {
 - [x] post 页 step1 新增微信信息采集区（头像 + 昵称）；detail 页游客点「上车」弹昵称采集 Sheet（0.1.8）
 - [x] 新增 login 页（微信头像 + 昵称，隐私授权弹窗）；游客模式冷启动直接进首页；requireAuth 功能入口按需触发（0.1.9）
 - [x] MP 后台隐私保护指引新增：用户头像、用户昵称、相册写入（保存球局海报）（0.1.9）
+- [x] pub-profile 移除荣誉勋章模块（WXML/JS/WXSS 全清）（0.2.4）
+- [x] feed 页重构为 Keep 风格沉浸式行动仪表盘：暗色全屏、网球场底纹、三模式 Tab、GO 按钮呼吸动效（0.2.4）
+- [x] 自由训练：页内计时器（绿点呼吸 + 大字倒计时 + 结束 toast）（0.2.4）
+- [x] 计分比赛：post.js 加 autoTennisMode 参数，建局后直跳 tennis-mode（0.2.4）
+- [x] Tab Bar 深色化（`#0D1F16`，荧光绿选中色）（0.2.4）
+- [x] 装备模块：gear 页（球拍/球鞋/运动设备增删改）+ saveGear 云函数（0.2.5）
+- [x] post 页补隐私授权弹窗，修复 chooseLocation 真机无反馈（_onPrivacyNeeded 回调未挂载）（0.2.6）
+- [x] Tab Bar 重命名：训练→约球、记录→训练（0.2.6）
+- [x] 成长页"训练记录"改为"挥拍记录"，含正反手统计 + 比例条（0.2.7）
+- [x] 自由训练结束后弹挥拍数据上报 sheet + saveSwingStats 云函数（0.2.7）
 - [ ] `moments`/`avatars` 云存储安全规则：需控制台配置允许已登录用户上传（见下方说明）
 - [ ] 球搭子"约球"按钮目前仅跳转发帖页 + 预填备注，未来可做好友内消息通知闭环
 - [ ] H5 AI 教练：独立域名 + server，调用现有 askCoach / generatePortrait 云函数
+- [ ] 运动设备数据同步：Phase 2 通过 Apple Health / Garmin Connect 导出数据，对接 AI 教练分析
 
 ---
 

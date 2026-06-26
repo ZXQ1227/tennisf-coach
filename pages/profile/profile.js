@@ -23,6 +23,7 @@ Page({
     styleLabel: '',
     bio: '',
     techScores: null,
+    radarImgSrc: '',
     totalGames: 0,
     monthlyGames: 0,
     streak: 0,
@@ -49,13 +50,26 @@ Page({
     loading: true,
     invites: [],
     inviteCount: 0,
-    showInviteSheet: false
+    showInviteSheet: false,
+    swingStats: { fhTotal: 0, bhTotal: 0, svTotal: 0, vlTotal: 0, sessions: 0, lastSession: null },
+    swingChartData: { series: [], labels: ['周日','周一','周二','周三','周四','周五','周六'], todayIdx: 0, maxVal: 100, hasData: false },
+    statusBarHeight: 0,
+    weeklyCount: 0,
+    swingTotal: 0,
+    insightLine1: '',
+    insightLine2: '',
+    radarImageUrl: ''
+  },
+
+  onLoad: function() {
+    var sysInfo = wx.getSystemInfoSync()
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 })
   },
 
   onShow: function() {
     var player = app.globalData.player
     var hasProfile = !!(player && player.nickname)
-    var nickname = hasProfile ? player.nickname : (wx.getStorageSync('nickname') || '')
+    var nickname = hasProfile ? player.nickname : ''
     var COLORS = ['#2BB673', '#4ECDC4', '#F7B731', '#A29BFE', '#FF6B6B']
     var avatarColor = nickname ? COLORS[nickname.charCodeAt(nickname.length - 1) % COLORS.length] : '#2BB673'
     var levelInfo = hasProfile ? (LEVEL_MAP[player.level] || LEVEL_MAP.intermediate) : null
@@ -80,20 +94,37 @@ Page({
     }, function() {
       if (techScores) self._drawRadarWithRetry(techScores, 0)
     })
-    this.loadActivity()
-    if (hasProfile) this.loadInvites()
+    var now = Date.now()
+    var stale = !this._lastLoadTs || (now - this._lastLoadTs) > 30000
+    if (stale) {
+      this._lastLoadTs = now
+      if (hasProfile) {
+        this.loadActivity()
+        this.loadInvites()
+      } else {
+        this._buildEmptyWeeklyDays()
+      }
+    }
   },
 
-  goSetup: function() { wx.navigateTo({ url: '/pages/setup/setup' }) },
-  goEdit: function() { wx.navigateTo({ url: '/pages/setup/setup?mode=edit' }) },
-  goPostTab: function() { wx.navigateTo({ url: '/pages/post/post' }) },
+  goLogin: function() { wx.navigateTo({ url: '/pages/login/login' }) },
+  goEdit: function() {
+    if (!this.data.hasProfile) { wx.navigateTo({ url: '/pages/login/login' }); return }
+    wx.navigateTo({ url: '/pages/setup/setup?mode=edit' })
+  },
+  goTraining: function() {
+    if (!this.data.hasProfile) { wx.navigateTo({ url: '/pages/login/login' }); return }
+    wx.navigateTo({ url: '/pages/training/training' })
+  },
+  goMatches: function() { wx.navigateTo({ url: '/pages/training/training' }) },
+  goTrainingRecords: function() { wx.navigateTo({ url: '/pages/training-records/training-records' }) },
 
   openAICoach: function() {
+    if (!this.data.hasProfile) { wx.navigateTo({ url: '/pages/login/login' }); return }
     var H5_BASE = 'https://zxq1227.github.io/tennisf-coach/coach.html'
     var player = app.globalData.player || {}
     var fields = {
       nickname: player.nickname,
-      avatarUrl: player.avatarUrl,
       level: player.level,
       ntrpLevel: player.ntrpLevel,
       playStyle: player.playStyle,
@@ -104,14 +135,18 @@ Page({
       injuries: player.injuries
     }
     var url = H5_BASE + '?p=' + encodeURIComponent(JSON.stringify(fields))
-    wx.setClipboardData({
-      data: url,
-      success: function() {
-        wx.showModal({
-          title: 'AI 教练',
-          content: '链接已复制\n请在手机浏览器粘贴访问',
-          showCancel: false,
-          confirmText: '知道了'
+    wx.showModal({
+      title: '教练助手',
+      content: '点击"复制链接"后，在手机浏览器粘贴即可访问教练助手',
+      cancelText: '取消',
+      confirmText: '复制链接',
+      success: function(res) {
+        if (!res.confirm) return
+        wx.setClipboardData({
+          data: url,
+          success: function() {
+            wx.showToast({ title: '已复制', icon: 'success' })
+          }
         })
       }
     })
@@ -230,10 +265,25 @@ Page({
     if (invites.length === 0) this.setData({ showInviteSheet: false })
   },
 
+  _buildEmptyWeeklyDays: function() {
+    var DAYNAMES = ['日', '一', '二', '三', '四', '五', '六']
+    var weeklyDays = []
+    for (var wi = 6; wi >= 0; wi--) {
+      var wd = new Date()
+      wd.setDate(wd.getDate() - wi)
+      weeklyDays.push({
+        date: '', dayName: '周' + DAYNAMES[wd.getDay()],
+        count: 0, durationText: '', isToday: wi === 0, hasGame: false
+      })
+    }
+    this.setData({ weeklyDays: weeklyDays, weeklyCount: 0, loading: false })
+  },
+
   loadActivity: async function() {
     this.setData({ loading: true })
     try {
       var callRes = await wx.cloud.callFunction({ name: 'getMyActivity' })
+      var freshPlayer = this.data.player || {}
       var result = (callRes && callRes.result) || {}
       var created = result.created || []
       var joined = result.joined || []
@@ -521,6 +571,95 @@ Page({
         })
       })
 
+      // 挥拍统计（用 freshPlayer 拿最新 swingHistory）
+      var raw = (freshPlayer.swingStats) || {}
+      var swingHistory = (freshPlayer.swingHistory) || []
+      var fhTotal = raw.fhTotal || 0
+      var bhTotal = raw.bhTotal || 0
+      var svTotal = raw.svTotal || 0
+      var vlTotal = raw.vlTotal || 0
+      var lastSession = null
+      if (raw.lastSession) {
+        var lsDate = raw.lastSession.date
+        var lsTs = lsDate && (lsDate.$date || lsDate)
+        var lsDiff = lsTs ? Math.floor((Date.now() - lsTs) / 86400000) : -1
+        var lsDateText = lsDiff === 0 ? '今天' : lsDiff === 1 ? '昨天' : (lsDiff > 0 ? lsDiff + '天前' : '')
+        lastSession = { fh: raw.lastSession.fh || 0, bh: raw.lastSession.bh || 0, sv: raw.lastSession.sv || 0, vl: raw.lastSession.vl || 0, dateText: lsDateText }
+      }
+      var swingStats = { fhTotal: fhTotal, bhTotal: bhTotal, svTotal: svTotal, vlTotal: vlTotal, sessions: raw.sessions || 0, lastSession: lastSession }
+
+      // 本周挥拍趋势图
+      var weekDayNames = ['周日','周一','周二','周三','周四','周五','周六']
+      var todayDate = new Date()
+      var todayDayIdx = todayDate.getDay()
+      var weekStartTs = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - todayDayIdx).getTime()
+      var dailyTotals = { fh:[0,0,0,0,0,0,0], bh:[0,0,0,0,0,0,0], sv:[0,0,0,0,0,0,0], vl:[0,0,0,0,0,0,0] }
+      swingHistory.forEach(function(entry) {
+        var ts = entry.ts || (entry.date && (entry.date.$date || entry.date)) || 0
+        var diff = ts - weekStartTs
+        if (diff < 0 || diff >= 7 * 86400000) return
+        var di = Math.floor(diff / 86400000)
+        if (di < 0 || di > 6) return
+        dailyTotals.fh[di] += entry.fh || 0
+        dailyTotals.bh[di] += entry.bh || 0
+        dailyTotals.sv[di] += entry.sv || 0
+        dailyTotals.vl[di] += entry.vl || 0
+      })
+      if (!swingHistory.length && lastSession) {
+        dailyTotals.fh[todayDayIdx] = lastSession.fh
+        dailyTotals.bh[todayDayIdx] = lastSession.bh
+        dailyTotals.sv[todayDayIdx] = lastSession.sv
+        dailyTotals.vl[todayDayIdx] = lastSession.vl
+      }
+      var cumData = { fh:[], bh:[], sv:[], vl:[] }
+      var running = { fh:0, bh:0, sv:0, vl:0 }
+      for (var di = 0; di < 7; di++) {
+        var pushDay = function(k) {
+          if (di <= todayDayIdx) { running[k] += dailyTotals[k][di]; cumData[k].push(running[k]) }
+          else cumData[k].push(null)
+        }
+        pushDay('fh'); pushDay('bh'); pushDay('sv'); pushDay('vl')
+      }
+      var chartMax = 0
+      ;['fh','bh','sv','vl'].forEach(function(k) {
+        cumData[k].forEach(function(v) { if (v !== null && v > chartMax) chartMax = v })
+      })
+      if (chartMax > 0) {
+        var niceStep = chartMax <= 500 ? 100 : chartMax <= 2000 ? 500 : chartMax <= 10000 ? 1000 : 2000
+        chartMax = Math.ceil(chartMax / niceStep) * niceStep
+      } else {
+        chartMax = 100
+      }
+      var swingChartData = {
+        hasData: chartMax > 100,
+        labels: weekDayNames,
+        todayIdx: todayDayIdx,
+        maxVal: chartMax,
+        series: [
+          { key:'sv', label:'发球', color:'#00E5B4', rgba:'rgba(0,229,180,', total:svTotal, totalDisplay:svTotal.toLocaleString(), data:cumData.sv },
+          { key:'fh', label:'正手', color:'#DDDE00', rgba:'rgba(221,222,0,', total:fhTotal, totalDisplay:fhTotal.toLocaleString(), data:cumData.fh },
+          { key:'bh', label:'反手', color:'#FF2D78', rgba:'rgba(255,45,120,', total:bhTotal, totalDisplay:bhTotal.toLocaleString(), data:cumData.bh },
+          { key:'vl', label:'截击', color:'#B06EFF', rgba:'rgba(176,110,255,', total:vlTotal, totalDisplay:vlTotal.toLocaleString(), data:cumData.vl },
+        ]
+      }
+
+      var weeklyCount = weeklyDays.filter(function(d) { return d.hasGame }).length
+
+      // Compute insight lines from techScores
+      var insightLine1 = '', insightLine2 = ''
+      var ts = this._computeTechScores(this.data.player || freshPlayer)
+      if (ts) {
+        var SKILL_NAMES = { forehand: '正手', backhand: '反手', serve: '发球', volley: '截击', footwork: '步伐' }
+        var skillPairs = Object.keys(ts).filter(function(k) { return SKILL_NAMES[k] }).map(function(k) { return { key: k, name: SKILL_NAMES[k], val: ts[k] } })
+        if (skillPairs.length > 0) {
+          skillPairs.sort(function(a, b) { return b.val - a.val })
+          insightLine1 = '你的' + skillPairs[0].name + '表现突出'
+          insightLine2 = '继续加强' + skillPairs[skillPairs.length - 1].name
+        }
+      }
+
+      var swingTotal = swingStats.fhTotal + swingStats.bhTotal + swingStats.svTotal + swingStats.vlTotal
+
       this.setData({
         totalGames: totalGames, monthlyGames: monthlyGames, streak: streak,
         totalHoursNum: totalHoursNum, totalHoursUnit: totalHoursUnit,
@@ -529,19 +668,25 @@ Page({
         lastActiveLabel: lastActiveLabel, isActiveToday: isActiveToday, homeCourt: homeCourt,
         partners: partners,
         recentGames: recentGames, heatmapWeeks: heatmapWeeks,
-        weeklyDays: weeklyDays, loading: false
+        weeklyDays: weeklyDays, weeklyCount: weeklyCount, loading: false,
+        swingStats: swingStats, swingChartData: swingChartData,
+        swingTotal: swingTotal, insightLine1: insightLine1, insightLine2: insightLine2
       })
+      if (swingStats.sessions > 0) this._drawSwingChartWithRetry(swingChartData, 0)
+      this._loadSwingChart()
       // 写入 globalData 供动态页使用
       app.globalData.activityCache = {
         nickname: nickname,
         streak: streak,
         achievements: [],
         partners: partners,
+        weeklyCount: weeklyCount,
+        weeklyDays: weeklyDays,
+        totalHoursNum: totalH,
         updatedAt: Date.now(),
       }
       this.loadRecentMedia(recentGames)
     } catch(e) {
-      wx.showToast({ title: '加载失败', icon: 'none' })
       this.setData({ loading: false })
     }
   },
@@ -558,12 +703,22 @@ Page({
     var weakMap = {
       '步伐慢': { footwork: -20 }, '发球无力': { serve: -20 },
       '下网': { forehand: -10, backhand: -10 }, '出界': { forehand: -10, backhand: -10 },
-      '不会上旋': { forehand: -15, backhand: -10 }, '心理紧张': { forehand: -5, backhand: -5, serve: -10 }
+      '不会上旋': { forehand: -15, backhand: -10 }, '心理紧张': { forehand: -5, backhand: -5, serve: -10 },
+      '正手不稳': { forehand: -20 }, '反手偏弱': { backhand: -20 },
+      '发球不稳': { serve: -20 }, '二发太短': { serve: -15 },
+      '网前不自信': { volley: -25 }, '步伐跟不上': { footwork: -20 },
+      '方向控制差': { forehand: -10, backhand: -10 }
     }
     ;(player.weaknesses || []).forEach(function(k) {
       var p = weakMap[k] || {}
       Object.keys(p).forEach(function(ax) { s[ax] = Math.max(10, s[ax] + p[ax]) })
     })
+    var serveAdjMap = {
+      '还在练习稳定发入': -20, '能稳定发入，缺乏威胁': -5,
+      '一发有力量，二发较可靠': 10, '发球是主要得分手段': 25
+    }
+    var serveAdj = serveAdjMap[player.serveAbility] || 0
+    if (serveAdj !== 0) s.serve = Math.max(10, Math.min(95, s.serve + serveAdj))
     return s
   },
 
@@ -576,11 +731,200 @@ Page({
       query.select('#radar').fields({ node: true, size: true }).exec(function(res) {
         if (res && res[0] && res[0].node) {
           self.drawRadarChart(res[0].node, res[0].width, res[0].height, scores)
+          wx.canvasToTempFilePath({
+            canvas: res[0].node,
+            success: function(r) { self.setData({ radarImgSrc: r.tempFilePath }) },
+            fail: function() {}
+          })
         } else {
           self._drawRadarWithRetry(scores, attempt + 1)
         }
       })
     }, delays[attempt])
+  },
+
+  _loadSwingChart: function() {
+    var self = this
+    // 等 refreshPlayer (t=1.5s) 完成后读缓存；若缓存仍无 swingHistory 再兜底调云函数
+    setTimeout(function() { self._drawSwingChartFromCache() }, 2000)
+  },
+
+  _drawSwingChartFromCache: async function() {
+    var self = this
+    var p = app.globalData.player || {}
+    // 若 refreshPlayer 成功，swingHistory 应已就绪；否则兜底请求一次
+    if (!p.swingHistory || !p.swingHistory.length) {
+      try {
+        var res = await wx.cloud.callFunction({ name: 'getPlayer' })
+        var fresh = res && res.result && res.result.player
+        if (fresh) {
+          app.globalData.player = Object.assign({}, app.globalData.player, { swingStats: fresh.swingStats, swingHistory: fresh.swingHistory })
+          p = app.globalData.player
+        }
+      } catch(e) { return }
+    }
+    var rawStats = p.swingStats || {}
+    if (rawStats.sessions > 0) {
+      var lastSession = null
+      if (rawStats.lastSession) {
+        var lsTs = rawStats.lastSession.date && (rawStats.lastSession.date.$date || rawStats.lastSession.date)
+        var lsDiff = lsTs ? Math.floor((Date.now() - lsTs) / 86400000) : -1
+        var lsDateText = lsDiff === 0 ? '今天' : lsDiff === 1 ? '昨天' : (lsDiff > 0 ? lsDiff + '天前' : '')
+        lastSession = { fh: rawStats.lastSession.fh || 0, bh: rawStats.lastSession.bh || 0, sv: rawStats.lastSession.sv || 0, vl: rawStats.lastSession.vl || 0, dateText: lsDateText }
+      }
+      var freshSwingStats = { fhTotal: rawStats.fhTotal || 0, bhTotal: rawStats.bhTotal || 0, svTotal: rawStats.svTotal || 0, vlTotal: rawStats.vlTotal || 0, sessions: rawStats.sessions, lastSession: lastSession }
+      var freshSwingTotal = freshSwingStats.fhTotal + freshSwingStats.bhTotal + freshSwingStats.svTotal + freshSwingStats.vlTotal
+      self.setData({ swingStats: freshSwingStats, swingTotal: freshSwingTotal })
+    }
+
+    var swingHistory = p.swingHistory
+    if (!swingHistory || !swingHistory.length) return
+    var raw = rawStats
+    var fhTotal = raw.fhTotal || 0, bhTotal = raw.bhTotal || 0
+    var svTotal = raw.svTotal || 0, vlTotal = raw.vlTotal || 0
+    var todayDate = new Date()
+    var todayDayIdx = todayDate.getDay()
+    var weekStartTs = new Date(todayDate.getFullYear(), todayDate.getMonth(), todayDate.getDate() - todayDayIdx).getTime()
+    var dt = { fh:[0,0,0,0,0,0,0], bh:[0,0,0,0,0,0,0], sv:[0,0,0,0,0,0,0], vl:[0,0,0,0,0,0,0] }
+    swingHistory.forEach(function(e) {
+      var ts = e.ts || 0, diff = ts - weekStartTs
+      if (diff < 0 || diff >= 7 * 86400000) return
+      var di = Math.floor(diff / 86400000)
+      if (di < 0 || di > 6) return
+      dt.fh[di] += e.fh || 0; dt.bh[di] += e.bh || 0; dt.sv[di] += e.sv || 0; dt.vl[di] += e.vl || 0
+    })
+    var cum = { fh:[], bh:[], sv:[], vl:[] }, run = { fh:0, bh:0, sv:0, vl:0 }
+    for (var di = 0; di < 7; di++) {
+      var pushK = function(k) {
+        if (di <= todayDayIdx) { run[k] += dt[k][di]; cum[k].push(run[k]) } else cum[k].push(null)
+      }
+      pushK('fh'); pushK('bh'); pushK('sv'); pushK('vl')
+    }
+    var mx = 0
+    ;['fh','bh','sv','vl'].forEach(function(k) { cum[k].forEach(function(v) { if (v !== null && v > mx) mx = v }) })
+    if (mx > 0) { var step = mx <= 500 ? 100 : mx <= 2000 ? 500 : mx <= 10000 ? 1000 : 2000; mx = Math.ceil(mx / step) * step } else mx = 100
+    var cd = {
+      hasData: mx > 100, labels: ['周日','周一','周二','周三','周四','周五','周六'],
+      todayIdx: todayDayIdx, maxVal: mx,
+      series: [
+        { key:'sv', label:'发球', color:'#00E5B4', rgba:'rgba(0,229,180,', total:svTotal, totalDisplay:svTotal.toLocaleString(), data:cum.sv },
+        { key:'fh', label:'正手', color:'#DDDE00', rgba:'rgba(221,222,0,', total:fhTotal, totalDisplay:fhTotal.toLocaleString(), data:cum.fh },
+        { key:'bh', label:'反手', color:'#FF2D78', rgba:'rgba(255,45,120,', total:bhTotal, totalDisplay:bhTotal.toLocaleString(), data:cum.bh },
+        { key:'vl', label:'截击', color:'#B06EFF', rgba:'rgba(176,110,255,', total:vlTotal, totalDisplay:vlTotal.toLocaleString(), data:cum.vl },
+      ]
+    }
+    self.setData({ swingChartData: cd })
+    self._drawSwingChartWithRetry(cd, 0)
+  },
+
+  _drawSwingChartWithRetry: function(chartData, attempt) {
+    var self = this
+    var delays = [300, 700, 1500]
+    if (attempt >= delays.length) return
+    setTimeout(function() {
+      wx.createSelectorQuery().in(self).select('#swingChart').fields({ node: true, size: true }).exec(function(res) {
+        if (res && res[0] && res[0].node) {
+          self.drawSwingChart(res[0].node, res[0].width, res[0].height, chartData)
+        } else {
+          self._drawSwingChartWithRetry(chartData, attempt + 1)
+        }
+      })
+    }, delays[attempt])
+  },
+
+  drawSwingChart: function(canvas, W, H, chartData) {
+    var dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
+    canvas.width = W * dpr; canvas.height = H * dpr
+    var ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+
+    var series = chartData.series
+    var labels = chartData.labels
+    var todayIdx = chartData.todayIdx
+    var maxVal = chartData.maxVal
+    var N = 7
+    var padL = 10, padR = 46, padT = 14, padB = 36
+    var cW = W - padL - padR, cH = H - padT - padB
+
+    function xFor(i) { return padL + (i / (N - 1)) * cW }
+    function yFor(v) { return padT + cH - (v / maxVal) * cH }
+
+    // 水平网格 + Y 轴标签
+    var gridFracs = [0, 0.25, 0.5, 0.75, 1.0]
+    ctx.font = '11px PingFang SC'
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    gridFracs.forEach(function(frac) {
+      var gv = Math.round(frac * maxVal)
+      var gy = yFor(gv)
+      ctx.setLineDash([3, 5])
+      ctx.strokeStyle = 'rgba(255,255,255,0.1)'
+      ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + cW, gy); ctx.stroke()
+      if (gv > 0) {
+        ctx.setLineDash([])
+        ctx.fillStyle = 'rgba(255,255,255,0.28)'
+        var lbl = gv >= 1000 ? (gv / 1000) + 'k' : '' + gv
+        ctx.fillText(lbl, padL + cW + 6, gy)
+      }
+    })
+    ctx.setLineDash([])
+
+    // 未来日期灰色遮罩
+    if (todayIdx < 6) {
+      var grayX = xFor(todayIdx) + cW / ((N - 1) * 2)
+      ctx.fillStyle = 'rgba(12,12,12,0.55)'
+      ctx.fillRect(grayX, padT, padL + cW - grayX, cH + 1)
+    }
+
+    // Catmull-Rom 平滑曲线
+    function buildPath(pts) {
+      ctx.moveTo(pts[0].x, pts[0].y)
+      for (var i = 0; i < pts.length - 1; i++) {
+        var p0 = pts[Math.max(0, i - 1)], p1 = pts[i]
+        var p2 = pts[i + 1], p3 = pts[Math.min(pts.length - 1, i + 2)]
+        ctx.bezierCurveTo(
+          p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+          p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+          p2.x, p2.y
+        )
+      }
+    }
+
+    // 从后往前绘制，使最小值曲线在最上层
+    for (var si = series.length - 1; si >= 0; si--) {
+      var s = series[si]
+      var pts = []
+      for (var i = 0; i < N; i++) {
+        if (s.data[i] === null) continue
+        pts.push({ x: xFor(i), y: yFor(s.data[i]) })
+      }
+      if (!pts.length) continue
+      var baseY = padT + cH
+
+      // 渐变填充
+      var grad = ctx.createLinearGradient(0, padT, 0, baseY)
+      grad.addColorStop(0, s.rgba + '0.35)')
+      grad.addColorStop(1, s.rgba + '0)')
+      ctx.beginPath(); buildPath(pts)
+      ctx.lineTo(pts[pts.length - 1].x, baseY)
+      ctx.lineTo(pts[0].x, baseY)
+      ctx.closePath()
+      ctx.fillStyle = grad; ctx.fill()
+
+      // 折线
+      ctx.beginPath(); buildPath(pts)
+      ctx.strokeStyle = s.color; ctx.lineWidth = 2.5
+      ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke()
+    }
+
+    // X 轴日期标签
+    ctx.font = '11px PingFang SC'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+    for (var i = 0; i < N; i++) {
+      ctx.fillStyle = i <= todayIdx ? 'rgba(255,255,255,0.5)' : 'rgba(255,255,255,0.18)'
+      ctx.fillText(labels[i], xFor(i), padT + cH + 8)
+    }
   },
 
   drawRadarChart: function(canvas, W, H, scores) {
@@ -646,6 +990,7 @@ Page({
         var lx = cx + (R + pad) * Math.cos(a), ly = cy + (R + pad) * Math.sin(a)
         ctx.fillText(labels[i], lx, ly)
       }
+
   },
 
   loadRecentMedia: function(games) {

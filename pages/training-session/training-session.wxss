@@ -1,0 +1,132 @@
+.session-page {
+  background: #0A1A10;
+  min-height: 100vh;
+  display: flex; flex-direction: column;
+  padding-bottom: 220rpx;
+}
+
+/* 状态条 */
+.status-bar {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 16rpx 32rpx 0;
+}
+.status-item { display: flex; align-items: center; gap: 8rpx; }
+.gps-dot {
+  width: 14rpx; height: 14rpx; border-radius: 50%; background: #B2FF33;
+  animation: gps-blink 2s ease-in-out infinite;
+}
+@keyframes gps-blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+.status-txt { font-size: 22rpx; color: #B2FF33; font-weight: 600; }
+.status-hr-icon, .status-cal-icon { font-size: 24rpx; }
+.status-hr, .status-cal { font-size: 26rpx; font-weight: 800; color: #FFFFFF; }
+
+/* 计时器 */
+.timer-section {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 24rpx 0 16rpx;
+}
+.timer-label { font-size: 22rpx; color: rgba(255,255,255,0.45); letter-spacing: 2rpx; margin-bottom: 12rpx; }
+.timer-box {
+  border: 1.5rpx dashed rgba(255,255,255,0.22);
+  border-radius: 20rpx; padding: 14rpx 56rpx;
+}
+.timer-text {
+  font-size: 100rpx; font-weight: 900; color: #FFFFFF;
+  letter-spacing: -2rpx; font-variant-numeric: tabular-nums; line-height: 1;
+}
+.timer-target { font-size: 22rpx; color: rgba(255,255,255,0.35); margin-top: 10rpx; }
+
+/* 选手视觉区 */
+.player-zone {
+  flex: 1; position: relative; min-height: 200rpx;
+  display: flex; align-items: center; justify-content: center; overflow: hidden;
+}
+@keyframes beam-move {
+  0% { transform: translateX(-200rpx) rotate(35deg); opacity: 0; }
+  50% { opacity: 0.15; }
+  100% { transform: translateX(200rpx) rotate(35deg); opacity: 0; }
+}
+.beam {
+  position: absolute; height: 2rpx; width: 600rpx;
+  background: linear-gradient(90deg, transparent, #B2FF33, transparent);
+}
+.b1 { top: 40%; animation: beam-move 4s ease-in-out infinite; }
+.b2 { top: 55%; animation: beam-move 4s ease-in-out infinite 1.3s; }
+.b3 { top: 70%; animation: beam-move 4s ease-in-out infinite 2.6s; }
+.player-glow-outer {
+  position: absolute; width: 360rpx; height: 360rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(178,255,51,0.1) 0%, transparent 70%);
+  animation: outer-pulse 3s ease-in-out infinite;
+}
+@keyframes outer-pulse { 0%,100%{transform:scale(1)}50%{transform:scale(1.15)} }
+.player-glow-inner {
+  position: absolute; width: 180rpx; height: 180rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(178,255,51,0.18) 0%, transparent 70%);
+}
+.player-center {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column; align-items: center; gap: 12rpx;
+}
+.player-emoji { font-size: 80rpx; }
+.player-name { font-size: 26rpx; color: rgba(255,255,255,0.5); font-weight: 600; letter-spacing: 1rpx; }
+
+/* 统计 Swiper */
+.stats-swiper { height: 200rpx; }
+.stats-cards {
+  display: flex; gap: 0; padding: 20rpx 24rpx 0; height: 100%; box-sizing: border-box;
+}
+.stat-card {
+  flex: 1; background: rgba(255,255,255,0.06); border: 1rpx solid rgba(255,255,255,0.08);
+  border-radius: 20rpx; padding: 20rpx;
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6rpx;
+}
+.stat-card-mid { margin: 0 12rpx; }
+.stat-card-lbl { font-size: 20rpx; color: rgba(255,255,255,0.45); font-weight: 600; }
+.stat-card-val { font-size: 52rpx; font-weight: 900; color: #FFFFFF; line-height: 1; }
+.stat-card-unit { font-size: 18rpx; color: rgba(255,255,255,0.3); }
+
+/* AI 提示卡 */
+.ai-card {
+  display: flex; align-items: flex-start; gap: 20rpx;
+  margin: 20rpx 24rpx 0;
+  background: rgba(178,255,51,0.05); border: 1rpx solid rgba(178,255,51,0.15);
+  border-radius: 24rpx; padding: 24rpx;
+}
+.ai-card-avatar {
+  width: 80rpx; height: 80rpx; border-radius: 50%; flex-shrink: 0;
+  background: #0D2015; border: 1.5rpx solid rgba(178,255,51,0.3);
+  display: flex; align-items: center; justify-content: center;
+}
+.ai-avatar-emoji { font-size: 44rpx; }
+.ai-card-body { flex: 1; }
+.ai-card-label { display: block; font-size: 22rpx; color: rgba(178,255,51,0.8); font-weight: 700; margin-bottom: 8rpx; }
+.ai-card-tip { font-size: 26rpx; color: rgba(255,255,255,0.85); line-height: 1.6; }
+
+/* ── 底部操作栏 ── */
+.session-bottom {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; justify-content: space-around; align-items: flex-end;
+  padding: 20rpx 40rpx;
+  background: linear-gradient(to top, #0A1A10 60%, transparent);
+}
+.bottom-action { display: flex; flex-direction: column; align-items: center; gap: 10rpx; }
+.action-circle {
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+}
+.action-lock, .action-stop {
+  width: 100rpx; height: 100rpx;
+  background: rgba(255,255,255,0.1); border: 1rpx solid rgba(255,255,255,0.15);
+}
+.action-stop {
+  background: rgba(255,60,60,0.18); border-color: rgba(255,60,60,0.3);
+}
+.action-pause {
+  width: 160rpx; height: 160rpx;
+  background: #B2FF33;
+  box-shadow: 0 0 40rpx rgba(178,255,51,0.55);
+}
+.action-resume { background: #B2FF33; }
+.action-circle-icon { font-size: 36rpx; color: rgba(255,255,255,0.9); }
+.action-circle-icon-lg { font-size: 52rpx; color: #061410; font-weight: 900; }
+.action-stop .action-circle-icon { color: #FF6B6B; }
+.action-label { font-size: 22rpx; color: rgba(255,255,255,0.55); font-weight: 600; }

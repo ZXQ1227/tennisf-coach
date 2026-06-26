@@ -2,7 +2,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: 'cloud1-d0g1q4d5p6fc28083' })
 const https = require('https')
 
-const API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-d203e6b36cb640e3991212e029fcc234'
+const API_KEY = process.env.DEEPSEEK_API_KEY
 
 const SYSTEM_PROMPT = `你是一位专业网球AI教练，名叫 CoachAI。
 
@@ -46,10 +46,22 @@ function callDeepSeek(messages) {
       let data = ''
       res.on('data', chunk => { data += chunk })
       res.on('end', () => {
-        try { resolve(JSON.parse(data)) } catch(e) { reject(e) }
+        try {
+          const parsed = JSON.parse(data)
+          if (res.statusCode !== 200) {
+            const errMsg = (parsed.error && parsed.error.message) || ('HTTP ' + res.statusCode)
+            console.error('DeepSeek non-200:', res.statusCode, errMsg)
+            reject(new Error(errMsg))
+          } else {
+            resolve(parsed)
+          }
+        } catch(e) {
+          console.error('DeepSeek parse error, raw:', data.slice(0, 200))
+          reject(e)
+        }
       })
     })
-    req.setTimeout(75000, () => { req.destroy(new Error('DeepSeek request timed out')) })
+    req.setTimeout(50000, () => { req.destroy(new Error('DeepSeek timeout')) })
     req.on('error', reject)
     req.write(body)
     req.end()
@@ -89,11 +101,17 @@ AI画像: ${playerProfile.aiPersonality || ''}
 
   try {
     const result = await callDeepSeek(messages)
-    const content = result.choices && result.choices[0] && result.choices[0].message && result.choices[0].message.content
-    if (!content) return { error: 'AI 回复为空' }
+    console.log('DeepSeek raw:', JSON.stringify(result).slice(0, 500))
+    const msg = result.choices && result.choices[0] && result.choices[0].message
+    const content = msg && (msg.content || msg.reasoning_content)
+    if (!content) {
+      const detail = !result.choices ? 'no choices' : !result.choices[0] ? 'empty choices' : !msg ? 'no message' : 'content null'
+      console.error('Empty content detail:', detail, JSON.stringify(result).slice(0, 300))
+      return { error: '服务响应异常(' + detail + ')', debug: JSON.stringify(result).slice(0, 200) }
+    }
     return { ok: true, answer: content }
   } catch(e) {
-    console.error('DeepSeek error:', e)
-    return { error: 'AI 服务暂时不可用，请稍后重试' }
+    console.error('askCoach error:', e.message)
+    return { error: e.message || '服务暂时不可用' }
   }
 }

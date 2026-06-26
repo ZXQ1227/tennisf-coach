@@ -1,0 +1,67 @@
+<scroll-view class="records-page" scroll-y>
+
+  <!-- 月份导航 -->
+  <view class="month-nav">
+    <view class="month-arrow" bindtap="prevMonth">‹</view>
+    <text class="month-title">{{monthTitle}}</text>
+    <view class="month-arrow {{isCurrentMonth ? 'month-arrow-dim' : ''}}" bindtap="nextMonth">›</view>
+  </view>
+
+  <!-- 加载中 -->
+  <view wx:if="{{loading}}" class="records-loading">
+    <view class="load-spin"></view>
+  </view>
+
+  <block wx:else>
+
+  <!-- 月历网格 -->
+  <view class="calendar-wrap">
+    <view class="cal-weekdays">
+      <text wx:for="{{weekdays}}" wx:key="index" class="cal-wd">{{item}}</text>
+    </view>
+    <view class="cal-grid">
+      <view wx:for="{{calCells}}" wx:key="index"
+            class="cal-cell {{item.empty ? 'cal-cell-empty' : ''}} {{item.isToday ? 'cal-cell-today' : ''}} {{item.isSelected ? 'cal-cell-selected' : ''}}"
+            bindtap="selectDay" data-idx="{{index}}">
+        <view wx:if="{{!item.empty}}" class="cal-day-inner {{item.hasTrain ? 'cal-day-train' : ''}}">
+          <text class="cal-day-num {{item.hasTrain ? 'cal-day-num-train' : ''}}">{{item.day}}</text>
+          <view wx:if="{{item.hasTrain}}" class="cal-train-dot"></view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 月统计摘要 -->
+  <view class="month-summary">
+    <view class="msm-item">
+      <text class="msm-val">{{monthTrainDays}}</text>
+      <text class="msm-lbl">打球天数</text>
+    </view>
+  </view>
+
+  <!-- 选中日的球局列表 -->
+  <view class="section" wx:if="{{selectedSessions.length > 0}}">
+    <view class="section-hd">
+      <text class="section-title">{{selectedDateTitle}}</text>
+    </view>
+    <view wx:for="{{selectedSessions}}" wx:key="index" class="session-card">
+      <view class="session-card-lft">
+        <view class="session-type-dot"></view>
+        <view class="session-info">
+          <text class="session-location">{{item.location}}</text>
+          <text class="session-meta">{{item.time ? item.time + ' · ' : ''}}{{item.partners}} · {{item.durationText}}</text>
+        </view>
+      </view>
+      <view wx:if="{{item.cancelled}}" class="session-cancelled">已取消</view>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-day" wx:elif="{{selectedDay > 0}}">
+    <text class="empty-day-txt">当天没有球局记录</text>
+  </view>
+
+  </block>
+
+  <view style="height:160rpx"></view>
+</scroll-view>

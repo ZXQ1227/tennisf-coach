@@ -1,5 +1,17 @@
 <view class="page">
 
+  <!-- 隐私授权弹窗（chooseLocation 触发时显示） -->
+  <view wx:if="{{showPrivacy}}" class="privacy-mask">
+    <view class="privacy-box">
+      <text class="privacy-title">需要位置权限</text>
+      <text class="privacy-desc">选择球场需要获取你的位置信息，仅用于地图选点，不会上传或分享。</text>
+      <button id="post-privacy-agree-btn" class="privacy-agree"
+              open-type="agreePrivacyAuthorization"
+              bindagreeprivacyauthorization="onAgreePrivacy">同意并选择球场</button>
+      <button class="privacy-deny" bindtap="onDenyPrivacy">不同意</button>
+    </view>
+  </view>
+
   <view class="page-header">
     <view class="page-title">组个球局</view>
     <view class="step-indicator">

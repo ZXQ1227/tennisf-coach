@@ -101,27 +101,7 @@
         <view class="compat-chip" wx:if="{{totalHours > 0}}">
           ⏱ 累计 {{totalHours}} 小时
         </view>
-        <view class="compat-chip" wx:if="{{unlockedBadges.length > 0}}">
-          🏅 已获 {{unlockedBadges.length}} 枚成就
-        </view>
       </view>
-    </view>
-
-    <!-- 3. BadgeCard（有已解锁成就时显示）-->
-    <view class="card badge-card" wx:if="{{!notFound && unlockedBadges.length > 0}}">
-      <view class="card-hd">
-        <text class="card-ttl">荣誉勋章</text>
-        <text class="card-sub">{{unlockedBadges.length}} 枚</text>
-      </view>
-      <scroll-view class="badge-scroll" scroll-x>
-        <view class="badge-row">
-          <view wx:for="{{unlockedBadges}}" wx:key="key" wx:for-item="b"
-                class="badge-item" bindtap="onBadgeTap" data-desc="{{b.desc}}">
-            <text class="badge-icon">{{b.icon}}</text>
-            <text class="badge-name">{{b.name}}</text>
-          </view>
-        </view>
-      </scroll-view>
     </view>
 
     <!-- 底部占位（防止内容被 CTA 遮住）-->

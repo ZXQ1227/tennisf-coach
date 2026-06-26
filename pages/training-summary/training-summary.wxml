@@ -1,0 +1,105 @@
+<scroll-view class="summary-page" scroll-y>
+
+  <!-- 评分头部 -->
+  <view class="score-header">
+    <view class="score-hex-wrap">
+      <view class="score-hex">
+        <text class="score-num">{{score}}</text>
+      </view>
+      <view class="score-ring"></view>
+    </view>
+    <text class="score-title">{{scoreTitle}}</text>
+    <text class="score-sub">完成 {{trainingName}}</text>
+    <view class="improve-badge" wx:if="{{improvement > 0}}">
+      <text class="improve-text">⬆ 进步明显 比上次提升 {{improvement}}%</text>
+    </view>
+  </view>
+
+  <!-- 四项数据 -->
+  <view class="stat-row">
+    <view class="stat-item">
+      <text class="stat-val">{{elapsedText}}</text>
+      <text class="stat-lbl">训练时长</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-val">{{swingCount}}</text>
+      <text class="stat-lbl">击球数</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-val">{{hitRate}}%</text>
+      <text class="stat-lbl">命中率</text>
+    </view>
+    <view class="stat-divider"></view>
+    <view class="stat-item">
+      <text class="stat-val">{{calories}}</text>
+      <text class="stat-lbl">消耗(kcal)</text>
+    </view>
+  </view>
+
+  <!-- 心率图 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-title">心率记录</text>
+      <view class="hr-badges">
+        <view class="hr-badge">
+          <text class="hr-badge-lbl">平均</text>
+          <text class="hr-badge-val">{{avgHeartRate}} bpm</text>
+        </view>
+        <view class="hr-badge hr-badge-max">
+          <text class="hr-badge-lbl">最高</text>
+          <text class="hr-badge-val">{{maxHeartRate}} bpm</text>
+        </view>
+      </view>
+    </view>
+    <canvas canvas-id="hrCanvas" class="hr-canvas" id="hrCanvas"></canvas>
+  </view>
+
+  <!-- 训练复盘 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-title">📊 训练复盘</text>
+      <view class="coach-chat-btn" bindtap="goCoachChat">
+        <text class="coach-chat-txt">深度分析 ›</text>
+      </view>
+    </view>
+    <view class="ai-review-card">
+      <text class="ai-review-text">{{aiReview}}</text>
+    </view>
+  </view>
+
+  <!-- 目标完成 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-title">目标完成</text>
+    </view>
+    <view wx:for="{{goalResults}}" wx:key="index" class="goal-item">
+      <view class="goal-item-hd">
+        <view class="goal-item-left">
+          <text class="goal-item-icon">{{item.icon}}</text>
+          <text class="goal-item-name">{{item.name}}</text>
+        </view>
+        <view class="goal-achieved-badge {{item.completed ? 'badge-done' : 'badge-partial'}}">
+          <text class="badge-txt">{{item.achievedText}} / {{item.targetText}}</text>
+        </view>
+      </view>
+      <view class="progress-bar-track">
+        <view class="progress-bar-fill {{item.completed ? 'fill-done' : 'fill-partial'}}"
+              style="width:{{item.pct}}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height:220rpx"></view>
+</scroll-view>
+
+<!-- 底部操作 -->
+<view class="summary-bottom">
+  <view class="bottom-outline-btn" bindtap="goRecords">
+    <text>查看训练记录</text>
+  </view>
+  <view class="bottom-fill-btn" bindtap="trainAgain">
+    <text>再来一练</text>
+  </view>
+</view>

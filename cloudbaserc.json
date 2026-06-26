@@ -16,6 +16,8 @@
     { "name": "getOpenId",        "timeout": 20, "runtime": "Nodejs18.15" },
     { "name": "getPublicProfile", "timeout": 20, "runtime": "Nodejs18.15" },
     { "name": "sendNotice",       "timeout": 20, "runtime": "Nodejs18.15" },
-    { "name": "updateLiveScore",  "timeout": 20, "runtime": "Nodejs18.15" }
+    { "name": "updateLiveScore",  "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "saveGear",         "timeout": 20, "runtime": "Nodejs18.15" },
+    { "name": "saveSwingStats",   "timeout": 20, "runtime": "Nodejs18.15" }
   ]
 }

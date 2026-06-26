@@ -50,6 +50,10 @@ App({
     }).catch(function() {})
   },
 
+  onUnhandledRejection: function(res) {
+    // 静默拦截云函数/DB 查询超时产生的 unhandled rejection，防止出现 WAServiceMainContext 错误
+  },
+
   hasProfile: function() {
     return !!(this.globalData.player && this.globalData.player.nickname)
   },
@@ -221,10 +225,10 @@ App({
       result.liveSubLabel = isFull ? '已满员' : (isOpen ? '缺人中' : '已关闭')
       result.liveSubColor = isFull ? '#FF6B6B' : (isOpen ? '#A6FF33' : '#F7B731')
     }
-    result.avatars = (p.joiners || []).slice(0, 3).map(function(name, i) {
+    result.avatars = (p.joiners || []).filter(function(n) { return !!n }).slice(0, 3).map(function(name, i) {
       return { initial: name.slice(-1), color: AVATAR_COLORS[i % AVATAR_COLORS.length] }
     })
-    result.avatarsFull = (p.joiners || []).map(function(name, i) {
+    result.avatarsFull = (p.joiners || []).filter(function(n) { return !!n }).map(function(name, i) {
       return { initial: name.slice(-1), name: name, color: AVATAR_COLORS[i % AVATAR_COLORS.length] }
     })
     result.extraCount = Math.max(0, joined - 3)

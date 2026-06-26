@@ -6,13 +6,18 @@ Page({
     nickname: '',
     saving: false,
     showPrivacy: false,
-    canGoBack: false
+    canGoBack: false,
+    showNickBar: false,
+    focusNick: false,
+    statusBarHeight: 44
   },
 
   onLoad: function(options) {
     this._returnUrl = options.return ? decodeURIComponent(options.return) : ''
     var pages = getCurrentPages()
     this.setData({ canGoBack: pages.length > 1 })
+    var sysInfo = wx.getSystemInfoSync()
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44 })
     var self = this
     app.globalData._onPrivacyNeeded = function() {
       self.setData({ showPrivacy: true })
@@ -31,19 +36,19 @@ Page({
     this.setData({ showPrivacy: false })
   },
 
-  goBack: function() {
-    wx.navigateBack()
-  },
-
   onDenyPrivacy: function() {
     this.setData({ showPrivacy: false })
     wx.showToast({ title: '需要授权才能继续', icon: 'none' })
   },
 
+  goBack: function() { wx.navigateBack() },
+
   onChooseAvatar: function(e) {
     var tempUrl = e.detail.avatarUrl
-    this.setData({ avatarUrl: tempUrl })
     var self = this
+    this.setData({ avatarUrl: tempUrl, showNickBar: true })
+    // 延迟触发聚焦，确保昵称条已渲染
+    setTimeout(function() { self.setData({ focusNick: true }) }, 150)
     wx.cloud.uploadFile({
       cloudPath: 'avatars/' + Date.now() + '.jpg',
       filePath: tempUrl,
@@ -51,10 +56,12 @@ Page({
         self.setData({ avatarUrl: res.fileID })
         wx.setStorageSync('avatarUrl', res.fileID)
       },
-      fail: function() {
-        // 上传失败保留 tempUrl 用于展示，confirm 时再试
-      }
+      fail: function() {}
     })
+  },
+
+  onNickFocus: function() {
+    this.setData({ focusNick: false })
   },
 
   onNicknameInput: function(e) {
@@ -69,10 +76,11 @@ Page({
     }
     if (this.data.saving) return
     this.setData({ saving: true })
+    wx.showLoading({ title: '正在登录...', mask: true })
 
     var avatarUrl = this.data.avatarUrl
 
-    // 头像还是临时路径时再试一次上传
+    // 头像是临时路径时再试一次上传
     if (avatarUrl && avatarUrl.indexOf('cloud://') === -1 && avatarUrl.indexOf('http') === -1) {
       try {
         var res = await wx.cloud.uploadFile({
@@ -84,14 +92,15 @@ Page({
       } catch(e) {}
     }
 
+    var isNew = true
     try {
-      await wx.cloud.callFunction({
+      var saveRes = await wx.cloud.callFunction({
         name: 'savePlayer',
         data: { nickname: nickname, avatarUrl: avatarUrl || '' }
       })
+      isNew = !!(saveRes.result && saveRes.result.isNew)
     } catch(e) {}
 
-    // 无论云函数是否成功，本地先记录，不阻塞进入
     var player = Object.assign({}, app.globalData.player || {}, {
       nickname: nickname,
       avatarUrl: avatarUrl || ''
@@ -100,11 +109,19 @@ Page({
     wx.setStorageSync('playerProfile', player)
     wx.setStorageSync('nickname', nickname)
 
-    app._initBackground()
-    if (this._returnUrl) {
-      wx.redirectTo({ url: this._returnUrl })
+    wx.hideLoading()
+
+    if (isNew) {
+      wx.redirectTo({ url: '/pages/setup/setup' })
     } else {
-      wx.switchTab({ url: '/pages/index/index' })
+      app._initBackground()
+      if (this._returnUrl) {
+        wx.redirectTo({ url: this._returnUrl })
+      } else {
+        wx.reLaunch({ url: '/pages/profile/profile' })
+      }
     }
-  }
+  },
+
+  noop: function() {}
 })

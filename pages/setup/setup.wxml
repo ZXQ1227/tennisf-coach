@@ -1,6 +1,18 @@
 <wxs module="util" src="./utils.wxs"></wxs>
 <view class="page">
 
+  <!-- 隐私授权弹窗 -->
+  <view wx:if="{{showPrivacy}}" class="privacy-mask">
+    <view class="privacy-box">
+      <text class="privacy-title">隐私保护</text>
+      <text class="privacy-desc">TennisF 需要获取你的微信头像和昵称，用于完善球员档案，不用于其他用途。</text>
+      <button id="setup-privacy-agree-btn" class="privacy-agree"
+              open-type="agreePrivacyAuthorization"
+              bindagreeprivacyauthorization="onAgreePrivacy">同意并继续</button>
+      <button class="privacy-deny" bindtap="onDenyPrivacy">不同意</button>
+    </view>
+  </view>
+
   <!-- 步骤指示器（步骤1-4显示，步骤5隐藏）-->
   <view class="steps-bar" wx:if="{{step < 5}}">
     <view class="steps-inner">
@@ -11,17 +23,17 @@
   </view>
 
   <!-- ══════════════════════════════
-       Step 1: 关于你
+       Step 1: 关于你 / 你的水平
        ══════════════════════════════ -->
   <view wx:if="{{step === 1}}" class="step-view">
     <view class="step-hd">
-      <view class="step-emoji">👤</view>
-      <view class="step-title">关于你</view>
-      <view class="step-sub">建立你的球员身份</view>
+      <view class="step-emoji">{{isEdit ? '👤' : '🎯'}}</view>
+      <view class="step-title">{{isEdit ? '关于你' : '你的水平'}}</view>
+      <view class="step-sub">{{isEdit ? '更新你的球员信息' : '选择最接近你的 NTRP 等级'}}</view>
     </view>
 
-    <!-- 头像 -->
-    <view class="avatar-wrap">
+    <!-- 头像（仅编辑模式） -->
+    <view class="avatar-wrap" wx:if="{{isEdit}}">
       <button class="avatar-btn" open-type="chooseAvatar" bindchooseavatar="onChooseAvatar">
         <image wx:if="{{tempAvatarUrl || avatarUrl}}" src="{{tempAvatarUrl || avatarUrl}}"
                class="avatar-img" mode="aspectFill" />
@@ -29,11 +41,11 @@
           <text class="avatar-icon">📷</text>
         </view>
       </button>
-      <text class="avatar-hint">点击选择头像</text>
+      <text class="avatar-hint">点击更换头像</text>
     </view>
 
-    <!-- 昵称 -->
-    <view class="field-group">
+    <!-- 昵称（仅编辑模式） -->
+    <view class="field-group" wx:if="{{isEdit}}">
       <view class="field-label">球员昵称</view>
       <input type="nickname" class="field-input" placeholder="你在 TennisF 的名字"
              value="{{nickname}}" bindinput="onNicknameInput" />
@@ -41,7 +53,7 @@
 
     <!-- NTRP 水平 -->
     <view class="field-group">
-      <view class="field-label">NTRP 水平</view>
+      <view class="field-label">NTRP 自评水平</view>
       <view class="ntrp-grid">
         <view wx:for="{{ntrpOptions}}" wx:key="value" wx:for-item="n"
               class="ntrp-card {{ntrpLevel === n.value ? 'ntrp-active' : ''}}"
@@ -50,7 +62,10 @@
           <text class="ntrp-desc">{{n.desc}}</text>
         </view>
       </view>
+      <view class="ntrp-hint">本系统基于 USTA NTRP 通用等级特征设计</view>
     </view>
+
+    <view wx:if="{{isEdit}}" class="logout-btn" bindtap="confirmLogout">退出账号</view>
   </view>
 
   <!-- ══════════════════════════════
@@ -64,11 +79,20 @@
     </view>
 
     <view class="field-group">
-      <view class="field-label">最多能稳定对打多少拍？</view>
+      <view class="field-label">底线最多能稳定对打多少拍？</view>
       <view class="pill-list">
         <view wx:for="{{rallyOptions}}" wx:key="*this" wx:for-item="r"
               class="pill {{rallyCount === r ? 'pill-active' : ''}}"
               bindtap="selectRally" data-value="{{r}}">{{r}}</view>
+      </view>
+    </view>
+
+    <view class="field-group">
+      <view class="field-label">发球能力</view>
+      <view class="pill-list">
+        <view wx:for="{{serveOptions}}" wx:key="*this" wx:for-item="s"
+              class="pill {{serveAbility === s ? 'pill-active' : ''}}"
+              bindtap="selectServe" data-value="{{s}}">{{s}}</view>
       </view>
     </view>
 

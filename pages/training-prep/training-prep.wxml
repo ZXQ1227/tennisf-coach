@@ -1,0 +1,83 @@
+<scroll-view class="prep-page" scroll-y>
+
+  <!-- 教练卡片 -->
+  <view class="coach-card">
+    <view class="coach-avatar-wrap">
+      <view class="coach-avatar">
+        <text class="coach-avatar-emoji">🎾</text>
+      </view>
+      <view class="coach-avatar-glow"></view>
+    </view>
+    <view class="coach-body">
+      <view class="coach-badge">教练</view>
+      <text class="coach-tip-text">{{aiTip}}</text>
+      <view class="coach-stat-row">
+        <text class="coach-stat-lbl">上次训练命中率</text>
+        <view class="coach-stat-val-row">
+          <text class="coach-stat-num">{{lastHitRate}}%</text>
+          <text class="coach-trend">↗</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日训练目标 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-icon">🎯</text>
+      <text class="section-title">今日训练目标</text>
+    </view>
+    <view wx:for="{{goalItems}}" wx:key="index" class="goal-row">
+      <view class="goal-icon-wrap">
+        <text class="goal-icon">{{item.icon}}</text>
+      </view>
+      <view class="goal-info">
+        <text class="goal-name">{{item.name}}</text>
+        <text class="goal-desc">{{item.desc}}</text>
+      </view>
+      <text class="goal-progress">{{item.progress}}</text>
+    </view>
+  </view>
+
+  <!-- 训练模式 -->
+  <view class="section">
+    <view class="section-hd">
+      <text class="section-icon">⚙️</text>
+      <text class="section-title">训练模式</text>
+    </view>
+    <view wx:for="{{modes}}" wx:key="key" wx:for-item="m"
+          class="mode-row {{m.active ? 'mode-active' : ''}} {{m.locked ? 'mode-locked' : ''}}">
+      <view class="mode-check {{m.active ? 'mode-check-on' : 'mode-check-off'}}">
+        <text wx:if="{{m.active}}" class="mode-check-icon">✓</text>
+      </view>
+      <view class="mode-text">
+        <text class="mode-name {{m.locked ? 'mode-name-dim' : ''}}">{{m.name}}</text>
+        <text class="mode-desc">{{m.desc}}</text>
+      </view>
+      <view class="mode-right">
+        <text wx:if="{{m.locked}}" class="mode-lock">🔒</text>
+        <view wx:else class="mode-toggle mode-toggle-on"></view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height:280rpx"></view>
+</scroll-view>
+
+<!-- 底部操作栏（固定）-->
+<view class="prep-bottom">
+  <view class="bottom-side-btn" bindtap="goMusic">
+    <text class="bottom-side-icon">🎵</text>
+    <text class="bottom-side-txt">音乐</text>
+  </view>
+  <view class="go-wrap" bindtap="startSession">
+    <view class="go-circle {{goPressed ? 'go-pressed' : ''}}">
+      <text class="go-text">GO</text>
+    </view>
+    <text class="go-sub">开始训练</text>
+  </view>
+  <view class="bottom-side-btn" bindtap="goGear">
+    <text class="bottom-side-icon">✏️</text>
+    <text class="bottom-side-txt">装备</text>
+  </view>
+</view>

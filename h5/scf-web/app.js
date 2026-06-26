@@ -3,7 +3,7 @@
 const http = require('http')
 const https = require('https')
 
-const DEEPSEEK_KEY = 'sk-d203e6b36cb640e3991212e029fcc234'
+const DEEPSEEK_KEY = process.env.DEEPSEEK_KEY
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',

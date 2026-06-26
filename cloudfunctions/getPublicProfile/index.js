@@ -2,10 +2,10 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: 'cloud1-d0g1q4d5p6fc28083' })
 
 exports.main = async function(event) {
+  const { OPENID: viewerOpenid } = cloud.getWXContext()
   const db = cloud.database()
   const _  = db.command
-  const nickname       = event.nickname || ''
-  const viewerNickname = event.viewerNickname || ''
+  const nickname = event.nickname || ''
 
   if (!nickname) return { error: 'nickname required', player: null, stats: null }
 
@@ -13,17 +13,30 @@ exports.main = async function(event) {
     // 1. 查球员档案（players 集合 _id === openid）
     const playerRes = await db.collection('players').where({ nickname }).limit(1).get()
     const player = playerRes.data[0] || null
+    const playerOpenid = player ? player._id : null
 
-    // 2. 查该用户参与的球局（近 90 天）
+    // 2. 并发查：参与的球局（joinerOpenids）+ 发起的球局（_openid），合并去重做统计
     const since = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000)
-    const postsRes = await db.collection('posts')
-      .where({
-        joiners: _.elemMatch(_.eq(nickname)),
-        createdAt: _.gte(since)
-      })
-      .limit(100)
-      .get()
-    const posts = postsRes.data || []
+    let joinedPosts = []
+    let createdPosts = []
+    if (playerOpenid) {
+      const [joinedRes, createdRes] = await Promise.all([
+        db.collection('posts')
+          .where({ joinerOpenids: _.elemMatch(_.eq(playerOpenid)), createdAt: _.gte(since) })
+          .limit(100)
+          .get(),
+        db.collection('posts')
+          .where({ _openid: playerOpenid, createdAt: _.gte(since) })
+          .limit(100)
+          .get()
+      ])
+      joinedPosts = joinedRes.data || []
+      createdPosts = createdRes.data || []
+    }
+    // 合并去重（发起的局不会在 joinerOpenids 里，直接 concat 再 Set 去重）
+    const joinedIds = new Set(joinedPosts.map(function(p) { return p._id }))
+    const posts = joinedPosts.concat(createdPosts.filter(function(p) { return !joinedIds.has(p._id) }))
+    const createdCount = createdPosts.length
 
     // 3. 累计时长
     let totalMinutes = 0
@@ -50,30 +63,24 @@ exports.main = async function(event) {
       .sort(function(a, b) { return courtCounts[b] - courtCounts[a] })
       .slice(0, 2)
 
-    // 6. 与浏览者共同球局数
+    // 6. 与浏览者共同球局数（用云端 OPENID，不依赖前端传参）
     let togetherCount = 0
-    if (viewerNickname) {
+    if (viewerOpenid && viewerOpenid !== playerOpenid) {
       togetherCount = posts.filter(function(p) {
-        return p.joiners && p.joiners.indexOf(viewerNickname) !== -1
+        // 浏览者是参与者，或浏览者就是该局创建者
+        return (p.joinerOpenids && p.joinerOpenids.indexOf(viewerOpenid) !== -1)
+          || p._openid === viewerOpenid
       }).length
     }
 
-    // 7. 独特球友数（成就计算用）
+    // 7. 独特球友数（成就计算用）—— openid 去重
     const partners = {}
     posts.forEach(function(p) {
-      ;(p.joiners || []).forEach(function(j) { if (j !== nickname) partners[j] = true })
+      // 参与者
+      ;(p.joinerOpenids || []).forEach(function(id) { if (id !== playerOpenid) partners[id] = true })
+      // 创建者（当被查球员是参与者时，创建者也算球友）
+      if (p._openid && p._openid !== playerOpenid) partners[p._openid] = true
     })
-
-    // 8. 发起场次（通过 openid 查，cloud function 有 admin 权限）
-    let createdCount = 0
-    if (player && player._id) {
-      try {
-        const cr = await db.collection('posts')
-          .where({ _openid: player._id, createdAt: _.gte(since) })
-          .count()
-        createdCount = cr.total || 0
-      } catch(e) {}
-    }
 
     return {
       player: player,

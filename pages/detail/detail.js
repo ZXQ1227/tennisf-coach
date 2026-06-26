@@ -384,7 +384,7 @@ Page({
   },
 
   goIndex: function() {
-    wx.switchTab({ url: '/pages/index/index' })
+    wx.navigateBack()
   },
 
   // ── 上传现场照片 ──

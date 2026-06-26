@@ -1,0 +1,229 @@
+<view class="page">
+
+  <!-- ── Loading ── -->
+  <view class="loading-wrap" wx:if="{{loading}}">
+    <view class="loading-ring"></view>
+    <text class="loading-txt">加载中...</text>
+  </view>
+
+  <scroll-view scroll-y class="scroll-body" wx:else>
+
+    <!-- ── 球拍 ── -->
+    <view class="section">
+      <view class="section-hd">
+        <text class="section-icon">🎾</text>
+        <text class="section-title">球拍</text>
+        <text class="section-count">{{rackets.length}}</text>
+      </view>
+
+      <view wx:if="{{rackets.length === 0}}" class="empty-hint">
+        <text class="empty-hint-txt">还没有添加球拍，记录你的主力武器吧</text>
+      </view>
+
+      <view wx:for="{{rackets}}" wx:key="id" wx:for-item="r" class="gear-card">
+        <view class="gear-card-left">
+          <view class="gear-icon-wrap gear-racket">
+            <text class="gear-icon">🎾</text>
+          </view>
+        </view>
+        <view class="gear-card-body">
+          <view class="gear-name-row">
+            <text class="gear-brand">{{r.brand}}</text>
+            <text class="gear-model">{{r.model}}</text>
+            <view class="gear-primary-badge" wx:if="{{r.isPrimary}}">主力</view>
+          </view>
+          <view class="gear-specs" wx:if="{{r.weight || r.tension}}">
+            <text class="gear-spec-tag" wx:if="{{r.weight}}">{{r.weight}}</text>
+            <text class="gear-spec-tag" wx:if="{{r.tension}}">{{r.tension}}</text>
+          </view>
+          <text class="gear-notes" wx:if="{{r.notes}}">{{r.notes}}</text>
+        </view>
+        <view class="gear-card-actions">
+          <view class="gear-action-btn" bindtap="onEditRacket" data-index="{{index}}">编辑</view>
+          <view class="gear-action-del" bindtap="onDeleteRacket" data-index="{{index}}">删除</view>
+        </view>
+      </view>
+
+      <view class="add-btn" bindtap="onAddRacket">
+        <text class="add-btn-icon">+</text>
+        <text class="add-btn-txt">添加球拍</text>
+      </view>
+    </view>
+
+    <!-- ── 球鞋 ── -->
+    <view class="section">
+      <view class="section-hd">
+        <text class="section-icon">👟</text>
+        <text class="section-title">球鞋</text>
+        <text class="section-count">{{shoes.length}}</text>
+      </view>
+
+      <view wx:if="{{shoes.length === 0}}" class="empty-hint">
+        <text class="empty-hint-txt">还没有添加球鞋</text>
+      </view>
+
+      <view wx:for="{{shoes}}" wx:key="id" wx:for-item="s" class="gear-card">
+        <view class="gear-card-left">
+          <view class="gear-icon-wrap gear-shoe">
+            <text class="gear-icon">👟</text>
+          </view>
+        </view>
+        <view class="gear-card-body">
+          <view class="gear-name-row">
+            <text class="gear-brand">{{s.brand}}</text>
+            <text class="gear-model">{{s.model}}</text>
+            <view class="gear-primary-badge" wx:if="{{s.isPrimary}}">主力</view>
+          </view>
+          <text class="gear-notes" wx:if="{{s.notes}}">{{s.notes}}</text>
+        </view>
+        <view class="gear-card-actions">
+          <view class="gear-action-btn" bindtap="onEditShoe" data-index="{{index}}">编辑</view>
+          <view class="gear-action-del" bindtap="onDeleteShoe" data-index="{{index}}">删除</view>
+        </view>
+      </view>
+
+      <view class="add-btn" bindtap="onAddShoe">
+        <text class="add-btn-icon">+</text>
+        <text class="add-btn-txt">添加球鞋</text>
+      </view>
+    </view>
+
+    <!-- ── 运动设备 ── -->
+    <view class="section">
+      <view class="section-hd">
+        <text class="section-icon">⌚</text>
+        <text class="section-title">运动设备</text>
+        <text class="section-count">{{devices.length}}</text>
+      </view>
+
+      <view wx:if="{{devices.length === 0}}" class="empty-hint">
+        <text class="empty-hint-txt">绑定运动手表后，未来可同步心率、距离等训练数据</text>
+      </view>
+
+      <view wx:for="{{devices}}" wx:key="id" wx:for-item="d" class="gear-card">
+        <view class="gear-card-left">
+          <view class="gear-icon-wrap gear-device">
+            <text class="gear-icon">{{d.typeIcon}}</text>
+          </view>
+        </view>
+        <view class="gear-card-body">
+          <view class="gear-name-row">
+            <text class="gear-brand">{{d.typeLabel}}</text>
+          </view>
+          <text class="gear-model gear-device-name">{{d.label}}</text>
+          <view class="gear-device-coming">
+            <text class="gear-device-coming-txt">数据同步功能即将上线</text>
+          </view>
+        </view>
+        <view class="gear-card-actions">
+          <view class="gear-action-btn" bindtap="onEditDevice" data-index="{{index}}">编辑</view>
+          <view class="gear-action-del" bindtap="onDeleteDevice" data-index="{{index}}">删除</view>
+        </view>
+      </view>
+
+      <view class="add-btn" bindtap="onAddDevice">
+        <text class="add-btn-icon">+</text>
+        <text class="add-btn-txt">绑定设备</text>
+      </view>
+    </view>
+
+    <view class="page-footer"></view>
+  </scroll-view>
+
+  <!-- ── 底部编辑抽屉 ── -->
+  <view class="sheet-mask {{sheetVisible?'mask-open':''}}" bindtap="onSheetClose"></view>
+  <view class="sheet-panel {{sheetVisible?'sheet-open':''}}">
+
+    <view class="sheet-drag-row" bindtap="onSheetClose">
+      <view class="sheet-drag-pill"></view>
+    </view>
+
+    <view class="sheet-title-row">
+      <text class="sheet-title">{{sheetTitle}}</text>
+    </view>
+
+    <!-- 球拍表单 -->
+    <view class="form" wx:if="{{sheetType === 'racket'}}">
+      <view class="form-row">
+        <text class="form-label">品牌</text>
+        <input class="form-input" placeholder="如 Wilson、Babolat" value="{{formBrand}}"
+               bindinput="onBrandInput" maxlength="30" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">型号</text>
+        <input class="form-input" placeholder="如 Blade 98、Pure Drive" value="{{formModel}}"
+               bindinput="onModelInput" maxlength="40" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">重量</text>
+        <input class="form-input" placeholder="如 305g（选填）" value="{{formWeight}}"
+               bindinput="onWeightInput" maxlength="10" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">穿线张力</text>
+        <input class="form-input" placeholder="如 55磅（选填）" value="{{formTension}}"
+               bindinput="onTensionInput" maxlength="10" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">备注</text>
+        <input class="form-input" placeholder="选填" value="{{formNotes}}"
+               bindinput="onNotesInput" maxlength="50" />
+      </view>
+      <view class="form-row form-row-switch">
+        <text class="form-label">设为主力球拍</text>
+        <switch checked="{{formIsPrimary}}" bindchange="onPrimaryChange" color="#2BB673" />
+      </view>
+    </view>
+
+    <!-- 球鞋表单 -->
+    <view class="form" wx:if="{{sheetType === 'shoe'}}">
+      <view class="form-row">
+        <text class="form-label">品牌</text>
+        <input class="form-input" placeholder="如 Asics、Nike、K-Swiss" value="{{formBrand}}"
+               bindinput="onBrandInput" maxlength="30" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">型号</text>
+        <input class="form-input" placeholder="如 Gel Resolution 9" value="{{formModel}}"
+               bindinput="onModelInput" maxlength="40" />
+      </view>
+      <view class="form-row">
+        <text class="form-label">备注</text>
+        <input class="form-input" placeholder="选填" value="{{formNotes}}"
+               bindinput="onNotesInput" maxlength="50" />
+      </view>
+      <view class="form-row form-row-switch">
+        <text class="form-label">设为主力球鞋</text>
+        <switch checked="{{formIsPrimary}}" bindchange="onPrimaryChange" color="#2BB673" />
+      </view>
+    </view>
+
+    <!-- 设备表单 -->
+    <view class="form" wx:if="{{sheetType === 'device'}}">
+      <view class="form-row form-row-picker">
+        <text class="form-label">设备类型</text>
+        <picker bindchange="onDeviceTypeChange" value="{{formDeviceTypeIndex}}"
+                range="{{deviceTypeOptions}}" range-key="label">
+          <view class="form-picker-val">
+            <text>{{deviceTypeOptions[formDeviceTypeIndex].label}}</text>
+            <text class="form-picker-arrow">›</text>
+          </view>
+        </picker>
+      </view>
+      <view class="form-row">
+        <text class="form-label">设备名称</text>
+        <input class="form-input" placeholder="如 Apple Watch Series 9（选填）" value="{{formLabel}}"
+               bindinput="onLabelInput" maxlength="40" />
+      </view>
+    </view>
+
+    <view class="sheet-btns">
+      <view class="sheet-btn-cancel" bindtap="onSheetClose">取消</view>
+      <view class="sheet-btn-save {{saving?'btn-loading':''}}" bindtap="onSheetSave">
+        {{saving ? '保存中...' : '保存'}}
+      </view>
+    </view>
+
+  </view>
+
+</view>

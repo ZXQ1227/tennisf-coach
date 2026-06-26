@@ -1,53 +1,50 @@
-<view class="page">
+<scroll-view class="square-page" scroll-y bindscrolltolower="onScrollBottom">
 
-  <!-- ── Header ── -->
-  <view class="header">
-    <view class="greeting">{{nickname ? nickname + ' 🎾' : '球友 🎾'}}</view>
-    <view class="header-main-row">
-      <view class="question">今天，继续变强</view>
-      <view class="header-cta" bindtap="goPost">组局</view>
-    </view>
-
-    <!-- AI 今日建议（有画像时显示）-->
-    <view class="ai-today-card" wx:if="{{aiTodayFocus}}" bindtap="goCoach">
-      <text class="ai-today-icon">🎯</text>
-      <view class="ai-today-info">
-        <text class="ai-today-label">AI 今日重点</text>
-        <text class="ai-today-val">{{aiTodayFocus}}</text>
-      </view>
-      <text class="ai-today-arr">→</text>
-    </view>
-
-    <!-- 有进行中球局时：Live Banner -->
-    <view class="live-banner" wx:if="{{ongoingCount > 0}}" bindtap="goLive">
-      <view class="live-banner-dot"></view>
-      <text class="live-banner-text">{{ongoingCount}} 场正在激战中</text>
-      <text class="live-banner-arrow">→</text>
-    </view>
-    <view class="active-hint" wx:elif="{{activeCount > 0}}">{{activeCount}} 场球局正在招募</view>
+  <!-- 未登录空状态 -->
+  <view wx:if="{{!hasProfile}}" class="sq-guest-wrap">
+    <view class="sq-guest-icon">🎾</view>
+    <view class="sq-guest-title">球搭子广场</view>
+    <view class="sq-guest-desc">登录后发现附近球局\n找到你的专属球搭子</view>
+    <view class="sq-guest-btn" bindtap="goLogin">登录后查看</view>
   </view>
 
-  <!-- ── Filter Bar ── -->
-  <scroll-view class="filter-bar" scroll-x enable-flex wx:if="{{false}}">
-    <view wx:for="{{filters}}" wx:key="value"
-          class="filter-chip {{activeFilter === item.value ? 'filter-chip-active' : ''}}"
-          bindtap="onFilterTap" data-filter="{{item.value}}">{{item.label}}</view>
-  </scroll-view>
+  <block wx:if="{{hasProfile}}">
 
-  <!-- ── Empty State ── -->
-  <view class="empty-wrap" wx:if="{{!loading && filteredPosts.length === 0}}">
+  <!-- Tab 栏 + 发起球局 -->
+  <view class="sq-tabs">
+    <view class="sq-tab-group">
+      <view class="sq-tab {{activeTab==='discover'?'sq-tab-active':''}}" bindtap="setTab" data-tab="discover">发现球局</view>
+      <view class="sq-tab {{activeTab==='mine'?'sq-tab-active':''}}" bindtap="setTab" data-tab="mine">我的球局</view>
+    </view>
+    <view class="sq-create-btn" bindtap="createMatch">发起球局</view>
+  </view>
+
+  <!-- Live Banner -->
+  <view class="live-banner" wx:if="{{ongoingCount > 0}}" bindtap="goLive">
+    <view class="live-banner-dot"></view>
+    <text class="live-banner-text">{{ongoingCount}} 场正在激战中</text>
+    <text class="live-banner-arrow">→</text>
+  </view>
+  <view class="active-hint" wx:elif="{{activeCount > 0 && activeTab==='discover'}}">{{activeCount}} 场球局正在招募</view>
+
+  <!-- 加载中 -->
+  <view class="posts-loading" wx:if="{{postsLoading}}">
+    <view class="load-spin"></view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-wrap" wx:elif="{{!postsLoading && filteredPosts.length === 0}}">
     <text class="empty-emoji">🎾</text>
-    <text class="empty-title">{{activeFilter === 'all' ? '还没有球局' : '暂无匹配球局'}}</text>
-    <text class="empty-desc">去组一个吧</text>
+    <text class="empty-title">还没有球局</text>
+    <text class="empty-desc">来发起第一个吧</text>
+    <view class="empty-create-btn" bindtap="createMatch">发起球局</view>
   </view>
 
-  <!-- ── Cards ── -->
+  <!-- 球局卡片列表 -->
   <block wx:for="{{filteredPosts}}" wx:key="_id" wx:for-item="post">
 
-    <!-- ★ LIVE CARD：正在进行的球局 ★ -->
+    <!-- Live Card -->
     <view wx:if="{{post.gameStatus.code === 'in-progress'}}" class="live-card">
-
-      <!-- 顶部：状态 + 时长 -->
       <view class="lc-top" bindtap="goDetail" data-id="{{post._id}}">
         <view class="lc-status-pill">
           <view class="lc-dot"></view>
@@ -56,14 +53,9 @@
         </view>
         <text class="lc-elapsed">已打 {{post.timeLabel}}</text>
       </view>
-
-      <!-- 场地名 -->
       <view class="lc-venue" bindtap="goDetail" data-id="{{post._id}}">
-        {{post.location}}
-        <text class="lc-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
+        {{post.location}}<text class="lc-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
       </view>
-
-      <!-- 球员 & 标签 -->
       <view class="lc-meta" bindtap="goDetail" data-id="{{post._id}}">
         <view class="lc-tags">
           <view class="lc-tag" wx:if="{{post.levelInfo}}">{{post.levelInfo.label}}</view>
@@ -72,8 +64,6 @@
         </view>
         <text class="lc-players">{{post.joined}}/{{post.need}} 人</text>
       </view>
-
-      <!-- ──── 比分展示 ──── -->
       <view class="lc-score-row" bindtap="goDetail" data-id="{{post._id}}" wx:if="{{post.liveScore}}">
         <view class="lc-score-block">
           <text class="lc-score-num lc-score-a">{{post.liveScore.a}}</text>
@@ -88,20 +78,14 @@
           <text class="lc-score-name">对方</text>
         </view>
       </view>
-
-      <!-- ──── Timeline 实况轴 ──── -->
       <view class="lc-timeline">
         <view class="lc-tl-hd">
           <text class="lc-tl-label">实况动态</text>
           <text class="lc-tl-count" wx:if="{{post.recentMoments && post.recentMoments.length > 0}}">{{post.recentMoments.length}} 条</text>
         </view>
-
-        <!-- 空状态 -->
         <view class="lc-tl-empty" wx:if="{{!post.recentMoments || post.recentMoments.length === 0}}">
           <text class="lc-tl-empty-txt">🎾 快记录精彩瞬间</text>
         </view>
-
-        <!-- Timeline 条目 -->
         <view wx:for="{{post.recentMoments}}" wx:key="id" wx:for-item="m" class="lc-tl-item">
           <view class="lc-tl-left">
             <view class="lc-tl-dot {{m.nodeClass}}"></view>
@@ -115,12 +99,11 @@
             </view>
             <text class="lc-tl-text" wx:if="{{m.content}}">{{m.content}}</text>
             <image wx:if="{{m.type === 'photo' && m.imageUrls.length > 0}}"
-                   src="{{m.imageUrls[0]}}" mode="aspectFill" class="lc-tl-thumb"/>
+                   src="{{m.imageUrls[0]}}" mode="aspectFill" class="lc-tl-thumb"
+                   binderror="onMomentImgError" data-post-id="{{post._id}}" data-moment-id="{{m.id}}"/>
           </view>
         </view>
       </view>
-
-      <!-- 参与者操作栏 -->
       <view class="lc-actions" catchtap="noop" wx:if="{{post.isParticipant}}">
         <view class="lc-action-btn lc-action-photo" bindtap="quickUpload" data-id="{{post._id}}">
           <text class="lc-action-icon">📷</text>
@@ -132,12 +115,10 @@
           <text class="lc-action-txt">更新局分</text>
         </view>
       </view>
-
     </view>
 
-    <!-- ★ 普通卡片：其他状态 ★ -->
+    <!-- 普通卡片 -->
     <view wx:else class="{{post.cardClass}}" bindtap="goDetail" data-id="{{post._id}}">
-
       <view class="card-status-row">
         <view class="status-pill" style="background:{{post.gameStatus.bg}};color:{{post.gameStatus.color}}">
           <view class="{{post.statusDotClass}}" style="background:{{post.gameStatus.color}}"></view>
@@ -145,18 +126,14 @@
         </view>
         <view class="{{post.timeLabelClass}}">{{post.timeLabel}}</view>
       </view>
-
       <view class="card-location">
-        {{post.location}}
-        <text class="card-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
+        {{post.location}}<text class="card-distance" wx:if="{{post.distanceText}}"> · {{post.distanceText}}</text>
       </view>
-
       <view class="card-tags" wx:if="{{post.levelInfo || post.courtLabel || post.matchLabel}}">
         <view class="tag tag-level" wx:if="{{post.levelInfo}}" style="color:{{post.levelInfo.color}}">{{post.levelInfo.label}}</view>
         <view class="tag" wx:if="{{post.courtLabel}}">{{post.courtLabel}}</view>
         <view class="tag" wx:if="{{post.matchLabel}}">{{post.matchLabel}}</view>
       </view>
-
       <view class="card-bottom">
         <view class="spots-wrap">
           <text class="{{post.spotsMainClass}}">{{post.spotsText}}</text>
@@ -168,56 +145,60 @@
         <view class="cta-btn cta-full" wx:elif="{{post.gameStatus.code === 'full'}}">候补</view>
         <view class="cta-btn cta-disabled" wx:else>已结束</view>
       </view>
-
     </view>
 
   </block>
 
-  <!-- ── 加载更多 footer ── -->
-  <view class="load-footer" wx:if="{{!loading && filteredPosts.length > 0}}">
-    <view wx:if="{{loadingMore}}" class="load-more-row">
+  <!-- 加载更多 footer -->
+  <view class="load-footer" wx:if="{{!postsLoading && filteredPosts.length > 0}}">
+    <view wx:if="{{postsLoadingMore}}" class="load-more-row">
       <view class="load-spin"></view>
       <text class="load-more-txt">加载更多...</text>
     </view>
-    <view wx:elif="{{!hasMore}}" class="create-card" bindtap="goPost">
+    <view wx:elif="{{!postsHasMore && activeTab === 'discover'}}" class="create-card" bindtap="createMatch">
       <view class="create-card-left">
         <text class="create-card-title">没有找到合适的局？</text>
-        <text class="create-card-sub">发起你的专属球局，等球友来加入</text>
+        <text class="create-card-sub">发起你的专属球局</text>
       </view>
       <view class="create-card-btn">发起 →</view>
     </view>
   </view>
 
-  <!-- 局分更新浮层 -->
-  <view class="score-overlay" wx:if="{{showScoreOverlay}}" bindtap="cancelScore">
-    <view class="score-sheet" catchtap="noop">
-      <view class="ss-handle"></view>
-      <view class="ss-title">🔢 更新局分</view>
-      <view class="ss-score-row">
-        <view class="ss-side">
-          <text class="ss-side-label">我方</text>
-          <view class="ss-ctrl">
-            <view class="ss-sub" bindtap="subQuickA">−</view>
-            <text class="ss-num">{{quickScoreA}}</text>
-            <view class="ss-add" bindtap="addQuickA">+</view>
-          </view>
-        </view>
-        <text class="ss-colon">:</text>
-        <view class="ss-side">
-          <text class="ss-side-label">对方</text>
-          <view class="ss-ctrl">
-            <view class="ss-sub" bindtap="subQuickB">−</view>
-            <text class="ss-num">{{quickScoreB}}</text>
-            <view class="ss-add" bindtap="addQuickB">+</view>
-          </view>
-        </view>
-      </view>
-      <view class="ss-set-row">
-        <text class="ss-set-txt">第 {{quickScoreSet}} 盘</text>
-        <view class="ss-set-next" bindtap="upQuickSet">换盘 →</view>
-      </view>
-      <view class="ss-confirm" bindtap="confirmScore">确认更新</view>
-    </view>
-  </view>
+  <view style="height:80rpx"></view>
 
+  </block>
+</scroll-view>
+
+<!-- 局分更新浮层 -->
+<view class="score-overlay" wx:if="{{showScoreOverlay}}" bindtap="cancelScore">
+  <view class="score-sheet" catchtap="noop">
+    <view class="ss-handle"></view>
+    <view class="ss-title">🔢 更新局分</view>
+    <view class="ss-score-row">
+      <view class="ss-side">
+        <text class="ss-side-label">我方</text>
+        <view class="ss-counter">
+          <view class="ss-btn" bindtap="subQuickA">−</view>
+          <text class="ss-num">{{quickScoreA}}</text>
+          <view class="ss-btn" bindtap="addQuickA">+</view>
+        </view>
+      </view>
+      <text class="ss-colon">:</text>
+      <view class="ss-side">
+        <text class="ss-side-label">对方</text>
+        <view class="ss-counter">
+          <view class="ss-btn" bindtap="subQuickB">−</view>
+          <text class="ss-num">{{quickScoreB}}</text>
+          <view class="ss-btn" bindtap="addQuickB">+</view>
+        </view>
+      </view>
+    </view>
+    <view class="ss-set-row">
+      <text class="ss-set-label">第</text>
+      <text class="ss-set-num">{{quickScoreSet}}</text>
+      <text class="ss-set-label">盘</text>
+      <view class="ss-set-up" bindtap="upQuickSet">↑</view>
+    </view>
+    <view class="ss-confirm" bindtap="confirmScore">确认更新</view>
+  </view>
 </view>

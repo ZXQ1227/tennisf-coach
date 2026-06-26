@@ -1,0 +1,115 @@
+<scroll-view class="training-page" scroll-y>
+
+  <!-- 顶部导航 -->
+  <view class="training-nav" style="padding-top:{{statusBarHeight + 12}}px">
+    <view class="nav-back" bindtap="goBack">‹</view>
+    <text class="nav-title">训练</text>
+    <view class="nav-placeholder"></view>
+  </view>
+
+  <!-- 今日训练计划 Banner -->
+  <view class="today-plan-card">
+    <view class="plan-badge-row">
+      <view class="plan-ai-badge">推荐</view>
+    </view>
+    <view class="plan-title">{{planTitle}}</view>
+    <view class="plan-sub">{{planSub}}</view>
+    <view class="plan-meta-row">
+      <text class="plan-meta-item">⏱ 30分钟</text>
+      <text class="plan-meta-sep">·</text>
+      <text class="plan-meta-item">中级</text>
+      <text class="plan-meta-sep">·</text>
+      <text class="plan-meta-item">🔥 280千卡</text>
+    </view>
+    <view class="plan-start-btn" bindtap="startFreeTraining">
+      <text class="plan-start-icon">▶</text>
+      <text class="plan-start-txt">开始训练</text>
+    </view>
+  </view>
+
+  <!-- 技术训练 -->
+  <view class="section-hd">
+    <text class="section-title">技术训练</text>
+    <text class="section-more" bindtap="startFreeTraining">查看全部 ›</text>
+  </view>
+  <view class="skill-grid">
+    <view wx:for="{{skillItems}}" wx:key="key" wx:for-item="item"
+          class="skill-card" hover-class="skill-card-pressed" hover-stay-time="80"
+          bindtap="startSkillTraining" data-key="{{item.key}}">
+      <text class="skill-card-icon">{{item.icon}}</text>
+      <text class="skill-card-name">{{item.name}}</text>
+      <text class="skill-card-count">{{item.count}}次训练</text>
+    </view>
+  </view>
+
+  <!-- 自定义训练 -->
+  <view class="custom-train-row" bindtap="startFreeTraining">
+    <view class="custom-train-left">
+      <text class="custom-train-icon">📋</text>
+      <view class="custom-train-info">
+        <text class="custom-train-title">自定义训练</text>
+        <text class="custom-train-sub">创建属于你的训练计划</text>
+      </view>
+    </view>
+    <text class="custom-train-arrow">›</text>
+  </view>
+
+  <!-- 实战训练入口 -->
+  <view class="section-hd" style="margin-top:48rpx">
+    <text class="section-title">实战训练（组局比赛）</text>
+    <text class="section-more" bindtap="goSquare">查看更多 ›</text>
+  </view>
+
+  <view class="match-entry-card" bindtap="goMyMatches">
+    <view class="match-entry-icon-wrap" style="background:rgba(43,182,115,0.15)">
+      <text class="match-entry-icon">👥</text>
+    </view>
+    <view class="match-entry-info">
+      <text class="match-entry-title">我的球局</text>
+      <text class="match-entry-sub">查看和管理我的球局</text>
+    </view>
+    <text class="match-entry-arrow">›</text>
+  </view>
+
+  <view class="match-entry-card" bindtap="goFindMatches">
+    <view class="match-entry-icon-wrap" style="background:rgba(166,255,51,0.1)">
+      <text class="match-entry-icon">🔍</text>
+    </view>
+    <view class="match-entry-info">
+      <text class="match-entry-title">发现球局</text>
+      <text class="match-entry-sub">匹配附近球友，加入球局</text>
+    </view>
+    <text class="match-entry-arrow">›</text>
+  </view>
+
+  <!-- 训练数据 -->
+  <view class="training-stats-card" wx:if="{{weeklyCount > 0 || swingTotal > 0}}">
+    <view class="training-stats-hd">
+      <text class="training-stats-title">训练数据</text>
+      <text class="training-stats-period">本周</text>
+    </view>
+    <view class="training-stats-grid">
+      <view class="training-stat-box">
+        <view class="training-stat-val">{{totalHours}}<text class="training-stat-unit">h</text></view>
+        <view class="training-stat-lbl">训练时长</view>
+      </view>
+      <view class="training-stat-box">
+        <view class="training-stat-val">{{weeklyCount}}</view>
+        <view class="training-stat-lbl">训练次数</view>
+      </view>
+      <view class="training-stat-box">
+        <view class="training-stat-val">{{swingTotal}}</view>
+        <view class="training-stat-lbl">挥拍次数</view>
+      </view>
+    </view>
+    <view class="training-week-dots">
+      <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="week-dot-col">
+        <text class="week-dot-name">{{day.dayName}}</text>
+        <view class="week-dot {{day.hasGame ? 'week-dot-on' : 'week-dot-off'}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <view style="height:80rpx"></view>
+
+</scroll-view>

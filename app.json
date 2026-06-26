@@ -1,33 +1,27 @@
 {
   "pages": [
-    "pages/index/index",
+    "pages/profile/profile",
+    "pages/training/training",
     "pages/login/login",
     "pages/post/post",
-    "pages/profile/profile",
     "pages/setup/setup",
     "pages/detail/detail",
     "pages/tennis-mode/tennis-mode",
     "pages/pub-profile/pub-profile",
     "pages/game-report/game-report",
-    "pages/feed/feed"
+    "pages/gear/gear",
+    "pages/square/square",
+    "pages/training-prep/training-prep",
+    "pages/training-session/training-session",
+    "pages/training-summary/training-summary",
+    "pages/training-records/training-records"
   ],
   "window": {
-    "navigationBarBackgroundColor": "#FFFFFF",
+    "navigationBarBackgroundColor": "#121C17",
     "navigationBarTitleText": "",
-    "navigationBarTextStyle": "black",
-    "backgroundTextStyle": "light",
-    "backgroundColor": "#F7F8FA"
-  },
-  "tabBar": {
-    "color": "#BBBBBB",
-    "selectedColor": "#2BB673",
-    "backgroundColor": "#FFFFFF",
-    "borderStyle": "white",
-    "list": [
-      { "pagePath": "pages/index/index", "text": "训练" },
-      { "pagePath": "pages/feed/feed", "text": "记录" },
-      { "pagePath": "pages/profile/profile", "text": "成长" }
-    ]
+    "navigationBarTextStyle": "white",
+    "backgroundTextStyle": "dark",
+    "backgroundColor": "#121C17"
   },
   "permission": {
     "scope.userLocation": {

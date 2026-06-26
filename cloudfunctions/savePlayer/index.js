@@ -4,28 +4,32 @@ cloud.init({ env: 'cloud1-d0g1q4d5p6fc28083' })
 exports.main = async function(event) {
   const { OPENID } = cloud.getWXContext()
   const db = cloud.database()
-  const data = {
-    nickname: event.nickname || '',
-    avatarUrl: event.avatarUrl || '',
-    level: event.level || 'intermediate',
-    homeBase: event.homeBase || '',
-    preferMatch: event.preferMatch || 'doubles',
-    preferCourt: event.preferCourt || 'hard',
-    playStyle: event.playStyle || 'steady',
-    bio: event.bio || '',
-    ntrpLevel: event.ntrpLevel || '',
-    rallyCount: event.rallyCount || '',
-    strengths: event.strengths || [],
-    weaknesses: event.weaknesses || [],
-    goals: event.goals || [],
-    fitnessLevel: event.fitnessLevel || '',
-    injuries: event.injuries || [],
-    updatedAt: db.serverDate()
-  }
+
+  // Build update payload from only the fields that were provided
+  const data = { updatedAt: db.serverDate() }
+  const fields = [
+    'nickname', 'avatarUrl', 'level', 'homeBase', 'preferMatch', 'preferCourt',
+    'playStyle', 'bio', 'ntrpLevel', 'rallyCount', 'serveAbility',
+    'strengths', 'weaknesses', 'goals', 'fitnessLevel', 'injuries'
+  ]
+  fields.forEach(function(k) {
+    if (event[k] !== undefined) data[k] = event[k]
+  })
+
   try {
-    await db.collection('players').doc(OPENID).set({ data: data })
-    return { success: true }
+    const existing = await db.collection('players').doc(OPENID).get()
+    const isNew = !(existing.data && existing.data.ntrpLevel)
+    await db.collection('players').doc(OPENID).update({ data: data })
+    return { success: true, isNew: isNew }
   } catch(e) {
-    return { error: e.message }
+    // Doc doesn't exist — create with defaults for all fields
+    const defaults = {
+      level: 'intermediate', homeBase: '', preferMatch: 'doubles',
+      preferCourt: 'hard', playStyle: 'steady', bio: '',
+      ntrpLevel: '', rallyCount: '', serveAbility: '',
+      strengths: [], weaknesses: [], goals: [], fitnessLevel: '', injuries: []
+    }
+    await db.collection('players').doc(OPENID).set({ data: Object.assign(defaults, data) })
+    return { success: true, isNew: true }
   }
 }

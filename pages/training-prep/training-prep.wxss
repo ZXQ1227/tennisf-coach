@@ -1,0 +1,141 @@
+.prep-page {
+  background: #0A1A10;
+  min-height: 100vh;
+}
+
+/* ── AI 教练卡片 ── */
+.coach-card {
+  margin: 24rpx 24rpx 0;
+  background: linear-gradient(135deg, #0D2015 0%, #112A18 100%);
+  border: 1.5rpx solid rgba(178,255,51,0.25);
+  border-radius: 32rpx;
+  padding: 36rpx 32rpx;
+  display: flex; gap: 24rpx; align-items: flex-start;
+  box-shadow: 0 8rpx 40rpx rgba(0,0,0,0.5), inset 0 1rpx 0 rgba(178,255,51,0.1);
+}
+.coach-avatar-wrap { position: relative; flex-shrink: 0; }
+.coach-avatar {
+  width: 120rpx; height: 120rpx; border-radius: 50%;
+  background: #0D2015;
+  border: 2rpx solid rgba(178,255,51,0.4);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
+}
+.coach-avatar-emoji { font-size: 64rpx; }
+.coach-avatar-glow {
+  position: absolute; inset: -12rpx; border-radius: 50%;
+  background: radial-gradient(circle, rgba(178,255,51,0.2) 0%, transparent 70%);
+  z-index: 1;
+  animation: glow-pulse 2.5s ease-in-out infinite;
+}
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50% { opacity: 1; transform: scale(1.1); }
+}
+.coach-body { flex: 1; min-width: 0; }
+.coach-badge {
+  display: inline-block; background: #B2FF33; color: #061410;
+  font-size: 20rpx; font-weight: 800; padding: 5rpx 18rpx;
+  border-radius: 100rpx; margin-bottom: 16rpx; letter-spacing: 1rpx;
+}
+.coach-tip-text {
+  display: block; font-size: 30rpx; font-weight: 700; color: #FFFFFF;
+  line-height: 1.6; margin-bottom: 20rpx;
+}
+.coach-stat-row {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 16rpx; border-top: 1rpx solid rgba(255,255,255,0.08);
+}
+.coach-stat-lbl { font-size: 22rpx; color: rgba(255,255,255,0.45); }
+.coach-stat-val-row { display: flex; align-items: center; gap: 8rpx; }
+.coach-stat-num { font-size: 30rpx; font-weight: 900; color: #B2FF33; }
+.coach-trend { font-size: 28rpx; color: #B2FF33; }
+
+/* ── 分区 ── */
+.section { margin: 28rpx 24rpx 0; }
+.section-hd {
+  display: flex; align-items: center; gap: 12rpx; margin-bottom: 16rpx;
+}
+.section-icon { font-size: 32rpx; }
+.section-title { font-size: 28rpx; font-weight: 800; color: rgba(255,255,255,0.9); }
+
+/* ── 今日目标 ── */
+.goal-row {
+  display: flex; align-items: center; gap: 20rpx;
+  background: #0D2015; border: 1rpx solid rgba(255,255,255,0.06);
+  border-radius: 20rpx; padding: 24rpx; margin-bottom: 12rpx;
+}
+.goal-icon-wrap {
+  width: 72rpx; height: 72rpx; border-radius: 18rpx;
+  background: rgba(178,255,51,0.08); border: 1rpx solid rgba(178,255,51,0.15);
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.goal-icon { font-size: 36rpx; }
+.goal-info { flex: 1; }
+.goal-name { display: block; font-size: 28rpx; font-weight: 700; color: rgba(255,255,255,0.9); margin-bottom: 4rpx; }
+.goal-desc { font-size: 22rpx; color: rgba(255,255,255,0.35); }
+.goal-progress { font-size: 24rpx; color: rgba(255,255,255,0.35); font-weight: 600; flex-shrink: 0; }
+
+/* ── 训练模式 ── */
+.mode-row {
+  display: flex; align-items: center; gap: 20rpx;
+  background: #0D2015; border: 1rpx solid rgba(255,255,255,0.06);
+  border-radius: 20rpx; padding: 24rpx; margin-bottom: 12rpx;
+  transition: background 0.2s;
+}
+.mode-active {
+  background: rgba(178,255,51,0.08);
+  border-color: rgba(178,255,51,0.3);
+}
+.mode-locked { opacity: 0.55; }
+.mode-check {
+  width: 52rpx; height: 52rpx; border-radius: 14rpx;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.mode-check-on {
+  background: #B2FF33;
+}
+.mode-check-off {
+  background: rgba(255,255,255,0.06);
+  border: 1.5rpx solid rgba(255,255,255,0.15);
+}
+.mode-check-icon { font-size: 28rpx; font-weight: 900; color: #061410; }
+.mode-text { flex: 1; }
+.mode-name { display: block; font-size: 28rpx; font-weight: 700; color: rgba(255,255,255,0.9); margin-bottom: 4rpx; }
+.mode-name-dim { color: rgba(255,255,255,0.5); }
+.mode-desc { font-size: 22rpx; color: rgba(255,255,255,0.35); }
+.mode-right { flex-shrink: 0; }
+.mode-lock { font-size: 28rpx; }
+.mode-toggle {
+  width: 72rpx; height: 40rpx; border-radius: 20rpx;
+}
+.mode-toggle-on { background: #B2FF33; }
+.mode-toggle-off { background: rgba(255,255,255,0.15); }
+
+/* ── 底部操作栏 ── */
+.prep-bottom {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 20rpx 40rpx calc(32rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #0A1A10 70%, transparent);
+}
+.bottom-side-btn {
+  display: flex; flex-direction: column; align-items: center; gap: 8rpx;
+  background: rgba(255,255,255,0.07); border: 1rpx solid rgba(255,255,255,0.1);
+  border-radius: 24rpx; padding: 20rpx 36rpx;
+  min-width: 150rpx;
+}
+.bottom-side-icon { font-size: 36rpx; }
+.bottom-side-txt { font-size: 22rpx; color: rgba(255,255,255,0.65); font-weight: 600; }
+
+.go-wrap { display: flex; flex-direction: column; align-items: center; gap: 10rpx; }
+.go-circle {
+  width: 160rpx; height: 160rpx; border-radius: 80rpx;
+  background: #B2FF33;
+  display: flex; align-items: center; justify-content: center;
+  box-shadow: 0 0 48rpx rgba(178,255,51,0.6), 0 0 16rpx rgba(178,255,51,0.3);
+  transition: transform 0.12s ease, box-shadow 0.12s ease;
+}
+.go-pressed { transform: scale(0.93); box-shadow: 0 0 20rpx rgba(178,255,51,0.4); }
+.go-text { font-size: 52rpx; font-weight: 900; color: #061410; letter-spacing: 2rpx; }
+.go-sub { font-size: 22rpx; color: rgba(255,255,255,0.5); letter-spacing: 2rpx; }

@@ -114,7 +114,7 @@ Page({
   },
 
   goSquare: function() {
-    wx.switchTab({ url: '/pages/index/index' })
+    wx.navigateTo({ url: '/pages/training/training' })
   },
 
   noop: function() {}

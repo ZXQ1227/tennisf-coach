@@ -67,7 +67,8 @@ Page({
     showSlotSheet: false,
     editingSlotIndex: -1,
     slotInput: '',
-    slotSearchResults: []
+    slotSearchResults: [],
+    showPrivacy: false
   },
 
   onLoad: function(options) {
@@ -76,11 +77,46 @@ Page({
     const todayStr = today.getFullYear() + '-' + pad(today.getMonth() + 1) + '-' + pad(today.getDate())
     this.todayStr = todayStr
     if (options && options.note) this.setData({ note: decodeURIComponent(options.note) })
+    if (options && options.autoTennisMode) this._autoTennisMode = true
+    if (options && options.matchType) {
+      var mt = options.matchType
+      this.setData({
+        matchType: mt,
+        matchTypeOptions: this.data.matchTypeOptions.map(function(o) {
+          return Object.assign({}, o, { selected: o.value === mt })
+        })
+      })
+    }
     var player = getApp().globalData.player
     var savedNickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
     var savedAvatar = (player && player.avatarUrl) || wx.getStorageSync('avatarUrl') || ''
     this.setData({ dateMin: todayStr, date: todayStr, time: this.getDefaultTime(), nickname: savedNickname, avatarUrl: savedAvatar })
     this._rebuildSlots()
+
+    // 隐私授权：post 页也需挂载回调，否则 chooseLocation 触发隐私弹窗时卡死
+    var self = this
+    var app = getApp()
+    app.globalData._onPrivacyNeeded = function() {
+      self.setData({ showPrivacy: true })
+    }
+    if (app.globalData._privacyResolve) {
+      this.setData({ showPrivacy: true })
+    }
+  },
+
+  onAgreePrivacy: function() {
+    var app = getApp()
+    var resolve = app.globalData._privacyResolve
+    if (resolve) {
+      resolve({ buttonId: 'post-privacy-agree-btn' })
+      app.globalData._privacyResolve = null
+    }
+    this.setData({ showPrivacy: false })
+  },
+
+  onDenyPrivacy: function() {
+    this.setData({ showPrivacy: false })
+    wx.showToast({ title: '需要授权才能选择球场', icon: 'none' })
   },
 
   onShow: function() {
@@ -135,17 +171,17 @@ Page({
       },
       fail: function(err) {
         var msg = (err && err.errMsg) || ''
-        if (msg.indexOf('cancel') !== -1) return
+        if (msg === 'chooseLocation:fail cancel' || msg === 'chooseLocation:fail:cancel') return
         if (msg.indexOf('auth') !== -1 || msg.indexOf('deny') !== -1) {
           wx.showModal({
             title: '需要位置权限',
-            content: '选择球场需要开启位置权限，请前往设置中开启',
+            content: '选择球场需要位置权限，请在设置中开启后重试',
             confirmText: '去设置',
             cancelText: '取消',
             success: function(r) { if (r.confirm) wx.openSetting() }
           })
         } else {
-          wx.showToast({ title: '选择失败，请重试', icon: 'none' })
+          wx.showToast({ title: '选择球场失败，请重试', icon: 'none' })
         }
       }
     })
@@ -346,7 +382,7 @@ Page({
       var slots = data.slots.slice()
       if (slots.length > 0) slots[0] = { slotIndex: 0, status: 'CONFIRMED', nickname: nickname, avatarColor: slotColor(nickname) }
 
-      await db.collection('posts').add({
+      var addRes = await db.collection('posts').add({
         data: {
           nickname: nickname,
           location: data.locationName || data.location,
@@ -379,8 +415,15 @@ Page({
       })
 
       wx.setStorageSync('nickname', data.nickname)
-      wx.showToast({ title: '球局已发布 🎾', icon: 'none' })
-      setTimeout(function() { wx.switchTab({ url: '/pages/index/index' }) }, 800)
+      if (this._autoTennisMode && addRes && addRes._id) {
+        wx.showToast({ title: '开赛 🎾', icon: 'none' })
+        setTimeout(function() {
+          wx.navigateTo({ url: '/pages/tennis-mode/tennis-mode?id=' + addRes._id })
+        }, 600)
+      } else {
+        wx.showToast({ title: '球局已发布 🎾', icon: 'none' })
+        setTimeout(function() { wx.navigateBack() }, 800)
+      }
     } catch(e) {
       wx.showToast({ title: '发布失败，请重试', icon: 'none' })
     }

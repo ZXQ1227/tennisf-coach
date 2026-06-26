@@ -1,0 +1,117 @@
+.summary-page {
+  background: #0A1A10;
+  min-height: 100vh;
+}
+
+/* ── 评分头部 ── */
+.score-header {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 48rpx 24rpx 32rpx;
+}
+.score-hex-wrap { position: relative; margin-bottom: 28rpx; }
+.score-hex {
+  width: 180rpx; height: 180rpx;
+  background: linear-gradient(135deg, #1A3020, #0D2015);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  display: flex; align-items: center; justify-content: center;
+  position: relative; z-index: 2;
+}
+.score-ring {
+  position: absolute; inset: -8rpx;
+  background: linear-gradient(135deg, #B2FF33, #4ADE80, #B2FF33);
+  clip-path: polygon(50% 0%, 100% 25%, 100% 75%, 50% 100%, 0% 75%, 0% 25%);
+  z-index: 1;
+  animation: ring-spin 4s linear infinite;
+}
+@keyframes ring-spin {
+  0% { filter: hue-rotate(0deg) brightness(1); }
+  50% { filter: hue-rotate(30deg) brightness(1.3); }
+  100% { filter: hue-rotate(0deg) brightness(1); }
+}
+.score-num { font-size: 90rpx; font-weight: 900; color: #B2FF33; line-height: 1; }
+.score-title { font-size: 36rpx; font-weight: 900; color: #FFFFFF; margin-bottom: 8rpx; }
+.score-sub { font-size: 24rpx; color: rgba(255,255,255,0.45); margin-bottom: 20rpx; }
+.improve-badge {
+  background: rgba(255,165,0,0.15); border: 1rpx solid rgba(255,165,0,0.3);
+  border-radius: 100rpx; padding: 8rpx 28rpx;
+}
+.improve-text { font-size: 22rpx; color: #FFA500; font-weight: 700; }
+
+/* ── 四项数据 ── */
+.stat-row {
+  display: flex; align-items: stretch;
+  margin: 0 24rpx 8rpx;
+  background: #0D2015; border: 1rpx solid rgba(255,255,255,0.07);
+  border-radius: 24rpx; padding: 28rpx 8rpx;
+}
+.stat-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 8rpx; }
+.stat-val { font-size: 40rpx; font-weight: 900; color: #FFFFFF; line-height: 1; }
+.stat-lbl { font-size: 20rpx; color: rgba(255,255,255,0.4); }
+.stat-divider { width: 1rpx; background: rgba(255,255,255,0.08); margin: 4rpx 0; }
+
+/* ── 通用分区 ── */
+.section { margin: 28rpx 24rpx 0; }
+.section-hd {
+  display: flex; align-items: center; justify-content: space-between; margin-bottom: 16rpx;
+}
+.section-title { font-size: 30rpx; font-weight: 800; color: rgba(255,255,255,0.9); }
+
+/* 心率 badges */
+.hr-badges { display: flex; gap: 12rpx; }
+.hr-badge {
+  display: flex; gap: 8rpx; align-items: center;
+  background: rgba(255,255,255,0.06); border-radius: 100rpx; padding: 6rpx 18rpx;
+}
+.hr-badge-max { background: rgba(255,80,80,0.1); }
+.hr-badge-lbl { font-size: 20rpx; color: rgba(255,255,255,0.45); }
+.hr-badge-val { font-size: 22rpx; font-weight: 800; color: rgba(255,255,255,0.85); }
+.hr-canvas { width: 100%; height: 200rpx; display: block; }
+
+/* AI 复盘 */
+.coach-chat-btn { padding: 6rpx 20rpx; background: rgba(178,255,51,0.1); border-radius: 100rpx; }
+.coach-chat-txt { font-size: 22rpx; color: #B2FF33; font-weight: 700; }
+.ai-review-card {
+  background: rgba(178,255,51,0.05); border: 1rpx solid rgba(178,255,51,0.15);
+  border-radius: 24rpx; padding: 28rpx;
+}
+.ai-review-text { font-size: 28rpx; color: rgba(255,255,255,0.85); line-height: 1.8; }
+
+/* 目标完成 */
+.goal-item { margin-bottom: 20rpx; }
+.goal-item-hd { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10rpx; }
+.goal-item-left { display: flex; align-items: center; gap: 12rpx; }
+.goal-item-icon { font-size: 28rpx; }
+.goal-item-name { font-size: 26rpx; font-weight: 700; color: rgba(255,255,255,0.85); }
+.goal-achieved-badge { border-radius: 100rpx; padding: 5rpx 18rpx; }
+.badge-done { background: rgba(178,255,51,0.15); }
+.badge-partial { background: rgba(255,255,255,0.07); }
+.badge-txt { font-size: 20rpx; color: rgba(255,255,255,0.7); font-weight: 600; }
+.badge-done .badge-txt { color: #B2FF33; }
+.progress-bar-track {
+  height: 8rpx; background: rgba(255,255,255,0.08); border-radius: 4rpx; overflow: hidden;
+}
+.progress-bar-fill {
+  height: 100%; border-radius: 4rpx; transition: width 0.8s ease;
+}
+.fill-done { background: #B2FF33; }
+.fill-partial { background: rgba(178,255,51,0.45); }
+
+/* ── 底部操作 ── */
+.summary-bottom {
+  position: fixed; bottom: 0; left: 0; right: 0;
+  display: flex; gap: 16rpx;
+  padding: 20rpx 24rpx calc(32rpx + env(safe-area-inset-bottom));
+  background: linear-gradient(to top, #0A1A10 70%, transparent);
+}
+.bottom-outline-btn {
+  flex: 1; height: 96rpx;
+  border: 1.5rpx solid rgba(178,255,51,0.4); border-radius: 48rpx;
+  display: flex; align-items: center; justify-content: center;
+  color: #B2FF33; font-size: 28rpx; font-weight: 700;
+}
+.bottom-fill-btn {
+  flex: 1; height: 96rpx;
+  background: #B2FF33; border-radius: 48rpx;
+  display: flex; align-items: center; justify-content: center;
+  color: #061410; font-size: 28rpx; font-weight: 900;
+}

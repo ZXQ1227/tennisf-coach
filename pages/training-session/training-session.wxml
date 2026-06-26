@@ -1,0 +1,100 @@
+<view class="session-page" style="padding-top:{{statusBarHeight}}px">
+
+  <!-- 状态条 -->
+  <view class="status-bar">
+    <view class="status-item">
+      <view class="gps-dot"></view>
+      <text class="status-txt">GPS 信号强</text>
+    </view>
+    <view class="status-item">
+      <text class="status-hr-icon">❤️</text>
+      <text class="status-hr">{{heartRate}} 次/分</text>
+    </view>
+    <view class="status-item">
+      <text class="status-cal-icon">🔥</text>
+      <text class="status-cal">{{calories}} kcal</text>
+    </view>
+  </view>
+
+  <!-- 计时器 -->
+  <view class="timer-section">
+    <text class="timer-label">训练时长</text>
+    <view class="timer-box">
+      <text class="timer-text">{{elapsedText}}</text>
+    </view>
+    <text class="timer-target">目标 {{targetText}}</text>
+  </view>
+
+  <!-- 网球选手视觉区 -->
+  <view class="player-zone">
+    <view class="player-glow-outer"></view>
+    <view class="player-glow-inner"></view>
+    <view class="beam b1"></view>
+    <view class="beam b2"></view>
+    <view class="beam b3"></view>
+    <view class="player-center">
+      <text class="player-emoji">🎾</text>
+      <text class="player-name">{{trainingName}}</text>
+    </view>
+  </view>
+
+  <!-- 统计 Swiper -->
+  <swiper class="stats-swiper" indicator-dots="{{true}}" indicator-color="rgba(255,255,255,0.25)"
+          indicator-active-color="#B2FF33" circular="{{false}}">
+    <!-- 页1：数据统计 -->
+    <swiper-item>
+      <view class="stats-cards">
+        <view class="stat-card">
+          <text class="stat-card-lbl">击球数</text>
+          <text class="stat-card-val">{{swingCount}}</text>
+          <text class="stat-card-unit">次</text>
+        </view>
+        <view class="stat-card stat-card-mid">
+          <text class="stat-card-lbl">命中率</text>
+          <text class="stat-card-val">{{hitRate}}%</text>
+          <text class="stat-card-unit">目标 {{targetHitRate}}%</text>
+        </view>
+        <view class="stat-card">
+          <text class="stat-card-lbl">连续击球</text>
+          <text class="stat-card-val">{{consecutiveHits}}</text>
+          <text class="stat-card-unit">次</text>
+        </view>
+      </view>
+    </swiper-item>
+    <!-- 页2：教练提示 -->
+    <swiper-item>
+      <view class="ai-card">
+        <view class="ai-card-avatar">
+          <text class="ai-avatar-emoji">🎾</text>
+        </view>
+        <view class="ai-card-body">
+          <text class="ai-card-label">教练提示</text>
+          <text class="ai-card-tip">{{aiTip}}</text>
+        </view>
+      </view>
+    </swiper-item>
+  </swiper>
+
+</view>
+
+<!-- 底部操作栏（固定）-->
+<view class="session-bottom" style="padding-bottom:calc(32rpx + env(safe-area-inset-bottom))">
+  <view class="bottom-action">
+    <view class="action-circle action-lock" bindtap="toggleLock">
+      <text class="action-circle-icon">{{isLocked ? '🔓' : '🔒'}}</text>
+    </view>
+    <text class="action-label">锁屏</text>
+  </view>
+  <view class="bottom-action">
+    <view class="action-circle action-pause {{isPaused ? 'action-resume' : ''}}" bindtap="togglePause">
+      <text class="action-circle-icon-lg">{{isPaused ? '▶' : '⏸'}}</text>
+    </view>
+    <text class="action-label">{{isPaused ? '继续' : '暂停'}}</text>
+  </view>
+  <view class="bottom-action">
+    <view class="action-circle action-stop" bindtap="endSession">
+      <text class="action-circle-icon">■</text>
+    </view>
+    <text class="action-label">结束训练</text>
+  </view>
+</view>

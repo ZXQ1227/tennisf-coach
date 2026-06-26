@@ -1,187 +1,209 @@
-<scroll-view class="page-dark" scroll-y>
+<scroll-view class="home-page" scroll-y>
 
-  <!-- ── 无档案引导 ── -->
-  <view class="setup-prompt" wx:if="{{!hasProfile}}">
-    <view class="setup-prompt-hero">
-      <view class="hero-glow-tl"></view>
-      <text class="prompt-avatar">🎾</text>
-      <view class="prompt-title">建立你的球员档案</view>
-      <view class="prompt-sub">记录成长，认识球友，建立你在 TennisF 的运动身份</view>
+  <!-- ── 主页面 ── -->
+  <view>
+
+    <!-- Hero Section -->
+    <view class="hero-section" style="padding-top:{{statusBarHeight + 12}}px">
+
+      <!-- Logo -->
+      <view class="brand-logo">
+        <text class="brand-tennis">Tennis</text><text class="brand-f">F</text>
+      </view>
+
+      <!-- 问候区 -->
+      <view class="home-greeting-wrap">
+        <view class="home-av-wrap" bindtap="goEdit">
+          <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="home-av-img" mode="aspectFill" />
+          <view wx:elif="{{hasProfile}}" class="home-av-letter" style="background:{{avatarColor}}">{{nickname.slice(-1)}}</view>
+          <view wx:else class="home-av-letter home-av-guest">?</view>
+          <view wx:if="{{isActiveToday}}" class="home-av-dot"></view>
+        </view>
+        <view class="home-greeting-text">
+          <view wx:if="{{hasProfile}}" class="greeting-hi">Hi, {{nickname}}<view class="greeting-edit-icon" bindtap="goEdit">✎</view></view>
+          <view wx:else class="greeting-hi greeting-guest">登录后记录你的成长</view>
+        </view>
+      </view>
+
+      <!-- 运动轨迹（旋转容器，右上→左下） -->
+      <view class="streak-bg">
+        <view class="streak s1"></view>
+        <view class="streak s2"></view>
+        <view class="streak s3"></view>
+      </view>
+
+      <!-- 粒子（独立于旋转容器） -->
+      <view class="p p1"></view>
+      <view class="p p2"></view>
+      <view class="p p3"></view>
+      <view class="p p4"></view>
+      <view class="p p5"></view>
+      <view class="p p6"></view>
+
     </view>
-    <view class="prompt-body">
-      <view class="prompt-features">
-        <view class="prompt-feature">
-          <text class="feature-icon">📊</text>
-          <view class="feature-info">
-            <text class="feature-name">成长数据</text>
-            <text class="feature-desc">记录每一场球局</text>
-          </view>
+
+    <!-- 数据统计行 -->
+    <view class="home-stats-row">
+      <view class="home-stat">
+        <view class="home-stat-val">{{hasProfile ? (player.ntrpLevel || (levelInfo ? levelInfo.range : '--')) : '--'}}</view>
+        <view class="home-stat-tags">
+          <text class="stat-ntrp-tag">NTRP等级</text>
+          <text class="stat-style-tag" wx:if="{{styleLabel}}">{{styleLabel}}</text>
         </view>
-        <view class="prompt-feature">
-          <text class="feature-icon">🤝</text>
-          <view class="feature-info">
-            <text class="feature-name">球友关系</text>
-            <text class="feature-desc">找到固定球搭子</text>
-          </view>
+      </view>
+      <view class="stat-sep"></view>
+      <view class="home-stat">
+        <view class="home-stat-val">{{hasProfile ? totalHoursNum : '--'}}<text wx:if="{{hasProfile}}" class="stat-unit">h</text></view>
+        <view class="home-stat-lbl">累计训练</view>
+      </view>
+      <view class="stat-sep"></view>
+      <view class="home-stat">
+        <view class="home-stat-val">{{hasProfile ? streak : '--'}}<text wx:if="{{hasProfile}}" class="stat-unit">天</text></view>
+        <view class="home-stat-lbl">连续打球</view>
+      </view>
+    </view>
+
+    <!-- 未登录引导卡 -->
+    <view wx:if="{{!hasProfile}}" class="home-card guest-card" bindtap="goLogin">
+      <view class="guest-card-inner">
+        <view class="guest-card-icon">🎾</view>
+        <view class="guest-card-title">登录后解锁完整功能</view>
+        <view class="guest-card-desc">记录球局 · 追踪成长 · 连接球友</view>
+        <view class="guest-login-btn">立即登录 →</view>
+      </view>
+    </view>
+
+    <!-- 球员档案卡 -->
+    <view class="home-card" wx:if="{{techScores}}">
+      <view class="home-card-hd">
+        <view class="home-card-title-wrap">
+          <text class="home-card-title">球员档案</text>
+          <text class="home-card-info-icon">ⓘ</text>
         </view>
-        <view class="prompt-feature">
-          <text class="feature-icon">🏆</text>
-          <view class="feature-info">
-            <text class="feature-name">成就系统</text>
-            <text class="feature-desc">解锁专属运动称号</text>
+      </view>
+      <view class="profile-card-body">
+        <canvas id="radar" type="2d" class="home-radar-canvas {{radarImgSrc ? 'radar-offscreen' : ''}}"></canvas>
+        <image wx:if="{{radarImgSrc}}" src="{{radarImgSrc}}" class="home-radar-canvas" mode="aspectFill" />
+        <view class="profile-insight">
+          <text class="insight-line">{{insightLine1}}</text>
+          <text class="insight-line">{{insightLine2}}</text>
+          <text class="insight-line insight-dim">让技术更全面</text>
+          <view class="skill-report-btn" bindtap="goEdit">
+            <text class="skill-report-icon">📋</text>
+            <text class="skill-report-txt">技能分析报告</text>
           </view>
         </view>
       </view>
-      <button class="create-btn" bindtap="goSetup">创建球员档案 →</button>
     </view>
-  </view>
 
-  <!-- ── 有档案的完整页面 ── -->
-  <view wx:else>
-
-    <!-- ══ HERO 球员卡 ══ -->
-    <view class="hero-dark">
-      <view class="hero-glow-tl"></view>
-      <view class="hero-glow-br"></view>
-      <view class="hero-content">
-
-        <!-- 头像 + 昵称 + 编辑 -->
-        <view class="hero-top">
-          <view class="hero-av-wrap">
-            <image wx:if="{{avatarUrl}}" src="{{avatarUrl}}" class="hero-av-img" mode="aspectFill" />
-            <view wx:else class="hero-av-letter" style="background:{{avatarColor}}">
-              {{nickname ? nickname.slice(-1) : '?'}}
-            </view>
-            <view wx:if="{{isActiveToday}}" class="hero-av-dot"></view>
-          </view>
-
-          <view class="hero-id">
-            <view class="hero-name">{{nickname}}</view>
-            <view class="hero-tags-row">
-              <view wx:if="{{player.ntrpLevel || levelInfo}}" class="hero-tag-lvl" style="color:{{levelInfo ? levelInfo.color : '#2BB673'}}">
-                {{player.ntrpLevel ? 'NTRP ' + player.ntrpLevel : levelInfo.label + ' ' + levelInfo.range}}
-              </view>
-              <view wx:if="{{styleLabel}}" class="hero-tag-sty">{{styleLabel}}</view>
-            </view>
-          </view>
-
-          <button class="edit-btn-glass" bindtap="goEdit">编辑</button>
+    <!-- CTA 入口行 -->
+    <view class="cta-row">
+      <view class="cta-card-training" hover-class="cta-pressed" hover-stay-time="100" bindtap="goTraining">
+        <image class="cta-train-player" src="/images/tennis-player.png" mode="aspectFit" />
+        <view class="cta-train-glow"></view>
+        <view class="cta-train-content">
+          <view class="cta-train-title">开始训练</view>
+          <text class="cta-train-sub">针对性训练计划</text>
+          <text class="cta-train-sub">提升技术能力</text>
         </view>
-
-        <!-- Bio / 格言 -->
-        <view class="hero-bio-wrap" wx:if="{{bio}}">
-          <text class="bio-quote-mark">"</text>
-          <text class="bio-text">{{bio}}</text>
-          <text class="bio-quote-mark">"</text>
-        </view>
-
-        <!-- ── 技能掌握度模块 ── -->
-        <view class="skill-module">
-          <view class="hero-data-row">
-            <view class="hero-stats-col">
-              <text class="dark-card-title">技能掌握度</text>
-              <view class="hours-spacer"></view>
-              <text class="hours-lbl">累积练习时长 </text><text class="hours-val">{{totalHoursDisplay}}</text>
-              <view class="hours-change-row" wx:if="{{hoursChangeStr}}">
-                <text class="hours-change" style="color:{{hoursChangeColor}}">较上月 {{hoursChangeStr}}</text>
-              </view>
-              <view class="hero-status-row" wx:if="{{lastActiveLabel}}" style="margin-top:16rpx">
-                <view class="status-dot {{isActiveToday ? 'status-on' : 'status-off'}}"></view>
-                <text class="status-txt">{{lastActiveLabel}}</text>
-              </view>
-            </view>
-            <view class="skill-divider"></view>
-            <view class="hero-radar-wrap" wx:if="{{techScores}}">
-              <canvas id="radar" type="2d" class="hero-radar-canvas"></canvas>
-            </view>
+        <view class="cta-train-arrow">→</view>
+      </view>
+      <view class="cta-card-coach" hover-class="cta-pressed" hover-stay-time="100" bindtap="openAICoach">
+        <view class="cta-coach-glow"></view>
+        <view class="cta-coach-brain">🧠</view>
+        <view class="cta-coach-content">
+          <view class="cta-coach-title-row">
+            <text class="cta-coach-title">教练</text>
+            <view class="cta-coach-beta">Beta</view>
           </view>
+          <text class="cta-coach-sub">分析你的表现</text>
+          <text class="cta-coach-sub">给出专业建议</text>
         </view>
-
-        <!-- ── CTA 区 ── -->
-        <view class="cta-row">
-          <view class="cta-glow-btn cta-half" hover-class="cta-pressed" hover-stay-time="100" bindtap="goPostTab">
-            约球 🎾
-          </view>
-          <view class="cta-ai-btn cta-ai-half" hover-class="cta-pressed" hover-stay-time="100" bindtap="openAICoach">
-            AI 教练 ✨
-          </view>
-        </view>
-
+        <view class="cta-coach-arrow">→</view>
       </view>
     </view>
 
     <!-- 约球邀请 Banner -->
-    <view class="section-gap" wx:if="{{inviteCount > 0}}">
+    <view class="home-section-pad" wx:if="{{inviteCount > 0}}">
       <view class="invite-banner" bindtap="openInviteSheet">
         <text class="invite-banner-txt">🎾 有 {{inviteCount}} 条约球邀请</text>
         <text class="invite-banner-arr">›</text>
       </view>
     </view>
 
-    <!-- ══ Body 区域 ══ -->
-    <view class="body-dark">
-
-      <!-- ── 本周节奏 ── -->
-      <view class="dark-card">
-        <view class="section-hd">
-          <text class="dark-card-title" style="margin-bottom:0">本周节奏</text>
-          <view class="streak-tag" wx:if="{{streak > 1}}">🔥 {{streak}} 天</view>
-        </view>
-        <view class="weekly-grid">
-          <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
-            <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
-            <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
-              <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
-            </view>
-            <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
+    <!-- 训练日历 -->
+    <view class="home-card">
+      <view class="home-card-hd" bindtap="goTrainingRecords">
+        <text class="home-card-title">训练日历</text>
+        <text class="home-card-more">本周训练 {{weeklyCount}} 次 ›</text>
+      </view>
+      <view class="weekly-grid">
+        <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
+          <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
+          <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
+            <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
           </view>
+          <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
         </view>
       </view>
-
-      <!-- ── 球搭子 ── -->
-      <view class="dark-card" wx:if="{{partners.length > 0}}">
-        <view class="dark-card-title">球搭子</view>
-        <view class="pl-list">
-          <view wx:for="{{partners}}" wx:key="name" wx:for-item="p"
-                class="pl-row" bindtap="viewPartner" data-name="{{p.name}}">
-            <image wx:if="{{p.avatarUrl}}" src="{{p.avatarUrl}}" class="pl-av-img" mode="aspectFill" />
-            <view wx:else class="pl-av" style="background:{{p.color}}">{{p.initial}}</view>
-            <view class="pl-info">
-              <view class="pl-name-row">
-                <text class="pl-name">{{p.name}}</text>
-                <view class="pl-chip {{p.isStrong ? 'pl-chip-strong' : ''}}">{{p.titleIcon}} {{p.title}}</view>
-              </view>
-              <text class="pl-meta">{{p.count}}场 · {{p.lastText || ''}}</text>
-            </view>
-            <view class="pl-invite" catchtap="invitePartner" data-name="{{p.name}}">再约</view>
-          </view>
-        </view>
-      </view>
-
-<!-- ── 比赛回忆 ── -->
-      <view class="dark-card" wx:if="{{recentGames.length > 0}}">
-        <view class="dark-card-title">训练记录</view>
-        <view class="rl-list">
-          <view wx:for="{{recentGames}}" wx:key="_id" wx:for-item="g"
-                class="rl-row {{g.cancelled ? 'rl-dim' : ''}}"
-                bindtap="goDetailFromTimeline" data-id="{{g._id}}">
-            <text class="rl-meta">{{g.dayAgoText}} · {{g.location || '未知球场'}}</text>
-            <text class="rl-main">{{g.rmDesc}}</text>
-            <text class="rl-photo" wx:if="{{g.hasMedia}}">📸 {{g.mediaCount}} 张</text>
-          </view>
-        </view>
-      </view>
-
-      <!-- 空状态 -->
-      <view class="empty-wrap" wx:if="{{!loading && totalGames === 0 && hasProfile}}">
-        <text class="empty-emoji">🎾</text>
-        <text class="empty-text">去约球广场找第一场球局吧</text>
-      </view>
-
-      <view style="height:60rpx;"></view>
     </view>
 
+    <!-- 挥拍记录 -->
+    <view class="home-card">
+      <view class="home-card-hd">
+        <text class="home-card-title">挥拍记录</text>
+        <text class="home-card-sub-info" wx:if="{{swingStats.sessions > 0}}">{{swingStats.sessions}} 次训练</text>
+      </view>
+      <view wx:if="{{swingStats.sessions > 0}}" class="swing-summary-row">
+        <view class="swing-summary-item">
+          <view class="swing-summary-val">{{swingTotal}}</view>
+          <view class="swing-summary-lbl">累计挥拍</view>
+        </view>
+        <view class="swing-summary-item">
+          <view class="swing-summary-val">{{swingStats.sessions}}</view>
+          <view class="swing-summary-lbl">训练次数</view>
+        </view>
+        <view class="swing-last-block" wx:if="{{swingStats.lastSession}}">
+          <view class="swing-last-date">最近 {{swingStats.lastSession.dateText}}</view>
+          <view class="swing-last-detail">正手{{swingStats.lastSession.fh}} · 反手{{swingStats.lastSession.bh}} · 发球{{swingStats.lastSession.sv}}</view>
+        </view>
+      </view>
+      <view wx:else class="swing-empty">
+        <text class="swing-empty-icon">⌚</text>
+        <text class="swing-empty-txt">完成训练后可上报手表挥拍数据</text>
+      </view>
+    </view>
+
+    <!-- 球搭子 -->
+    <view wx:if="{{!hasProfile}}" class="home-card">
+      <view class="home-card-hd">
+        <text class="home-card-title">球搭子</text>
+      </view>
+      <view class="partners-empty-guest">
+        <text class="partners-empty-icon">👥</text>
+        <text class="partners-empty-txt">登录后查看你的球搭子</text>
+      </view>
+    </view>
+    <view class="home-card" wx:elif="{{partners.length > 0}}">
+      <view class="home-card-hd">
+        <text class="home-card-title">球搭子</text>
+      </view>
+      <scroll-view class="partners-hscroll" scroll-x enable-flex>
+        <view wx:for="{{partners}}" wx:key="name" wx:for-item="p"
+              class="partner-chip" bindtap="viewPartner" data-name="{{p.name}}">
+          <view class="partner-chip-av-wrap">
+            <image wx:if="{{p.avatarUrl}}" src="{{p.avatarUrl}}" class="partner-chip-av-img" mode="aspectFill" />
+            <view wx:else class="partner-chip-av-letter" style="background:{{p.color}}">{{p.initial}}</view>
+          </view>
+          <text class="partner-chip-name">{{p.name}}</text>
+          <text class="partner-chip-last">{{p.lastText ? p.lastText : p.count + '场'}}</text>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view style="height:80rpx;"></view>
   </view>
+
 </scroll-view>
 
 <!-- ══ 约球邀请 Sheet ══ -->
@@ -222,6 +244,7 @@
   </view>
 </view>
 
+
 <!-- ══ 留言 Sheet ══ -->
 <view class="sheet-overlay" wx:if="{{noteSheetOpen}}" bindtap="closeNoteSheet">
   <view class="bottom-sheet" catchtap="noop">
@@ -236,4 +259,3 @@
     </view>
   </view>
 </view>
-

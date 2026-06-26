@@ -2,7 +2,7 @@ const cloud = require('wx-server-sdk')
 cloud.init({ env: 'cloud1-d0g1q4d5p6fc28083' })
 const https = require('https')
 
-const API_KEY = process.env.DEEPSEEK_API_KEY || 'sk-d203e6b36cb640e3991212e029fcc234'
+const API_KEY = process.env.DEEPSEEK_API_KEY
 
 const NTRP_MAP = {
   '1.5': '1.5 - 刚接触网球',

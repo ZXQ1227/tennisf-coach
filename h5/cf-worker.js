@@ -1,3 +1,6 @@
+// DEEPSEEK_KEY must be set as a Cloudflare Worker secret (wrangler secret put DEEPSEEK_KEY)
+/* global DEEPSEEK_KEY */
+
 addEventListener('fetch', function(event) {
   event.respondWith(handleRequest(event.request))
 })
@@ -21,7 +24,7 @@ async function handleRequest(request) {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': 'Bearer sk-d203e6b36cb640e3991212e029fcc234'
+      'Authorization': 'Bearer ' + DEEPSEEK_KEY
     },
     body: JSON.stringify({
       model: 'deepseek-chat',

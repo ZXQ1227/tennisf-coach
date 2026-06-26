@@ -1,26 +1,17 @@
-const db = wx.cloud.database()
-const app = getApp()
-
-const FILTERS = [
-  { label: '全部', value: 'all' },
-  { label: '新手友好', value: 'beginner' },
-  { label: '进阶局', value: 'intermediate' },
-  { label: '竞技局', value: 'advanced' }
-]
+var app = getApp()
+var db = wx.cloud.database()
 
 var PAGE_SIZE = 25
 
 Page({
   data: {
+    hasProfile: false,
+    activeTab: 'discover',
     posts: [],
     filteredPosts: [],
-    loading: true,
-    loadingMore: false,
-    hasMore: true,
-    filters: FILTERS,
-    activeFilter: 'all',
-    nickname: '',
-    aiTodayFocus: '',
+    postsLoading: false,
+    postsLoadingMore: false,
+    postsHasMore: true,
     activeCount: 0,
     ongoingCount: 0,
     showScoreOverlay: false,
@@ -28,55 +19,48 @@ Page({
     quickScoreA: 0,
     quickScoreB: 0,
     quickScoreSet: 1,
+    nickname: ''
+  },
+
+  goLogin: function() { wx.navigateTo({ url: '/pages/login/login' }) },
+
+  onLoad: function(options) {
+    var tab = (options && options.tab) || 'discover'
+    var player = app.globalData.player
+    var hasProfile = !!(player && player.nickname)
+    var nickname = hasProfile ? player.nickname : ''
+    this.setData({ activeTab: tab, hasProfile: hasProfile, nickname: nickname })
+    this._loaded = true
+    if (hasProfile) {
+      this.loadPosts()
+      this._fetchUserLocation()
+      this.startRefreshTimer()
+    }
   },
 
   onShow: function() {
-    const nickname = wx.getStorageSync('nickname') || ''
-    const player = app.globalData.player
-    const aiTodayFocus = (player && player.aiTrainingFocus) || ''
-    this.setData({ nickname: nickname, aiTodayFocus: aiTodayFocus })
-    this._fetchUserLocation()
-    this.loadPosts()
-    this.startRefreshTimer()
+    var player = app.globalData.player
+    var hasProfile = !!(player && player.nickname)
+    var nickname = hasProfile ? player.nickname : ''
+    this.setData({ hasProfile: hasProfile, nickname: nickname })
+    if (this._loaded && hasProfile) {
+      this.loadPosts()
+    }
   },
-
-  _fetchUserLocation: function() {
-    var self = this
-    wx.getFuzzyLocation({
-      type: 'gcj02',
-      success: function(res) {
-        self._userLat = res.latitude
-        self._userLng = res.longitude
-        // 已有帖子时补算距离
-        if (self.rawPosts && self.rawPosts.length) self.refreshStatuses()
-      },
-      fail: function() {}
-    })
-  },
-
-  goCoach: function() { wx.switchTab({ url: '/pages/coach/coach' }) },
 
   onHide: function() { this.stopRefreshTimer() },
   onUnload: function() { this.stopRefreshTimer() },
 
-  onPullDownRefresh: function() {
-    this.loadPosts().then(function() { wx.stopPullDownRefresh() })
+  setTab: function(e) {
+    var tab = e.currentTarget.dataset.tab
+    this.setData({ activeTab: tab })
+    this._applyFilter()
   },
 
-  startRefreshTimer: function() {
-    var self = this
-    this.stopRefreshTimer()
-    this.refreshTimer = setInterval(function() { self.refreshStatuses() }, 30000)
-  },
-
-  stopRefreshTimer: function() {
-    if (this.refreshTimer) { clearInterval(this.refreshTimer); this.refreshTimer = null }
-  },
-
-  // ── Data Loading ──
+  // ── 数据加载 ──
 
   loadPosts: async function() {
-    this.setData({ loading: true, hasMore: true })
+    this.setData({ postsLoading: true, postsHasMore: true })
     this._serverSkip = 0
     this.rawPosts = []
     try {
@@ -84,12 +68,12 @@ Page({
       var cutoff48 = Date.now() - 48 * 3600 * 1000
       this.rawPosts = batch.filter(function(p) { return _keepPost(p, cutoff48) })
       this._serverSkip = batch.length
-      this.setData({ hasMore: batch.length >= PAGE_SIZE })
+      this.setData({ postsHasMore: batch.length >= PAGE_SIZE })
       this.refreshStatuses()
     } catch(e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
     }
-    this.setData({ loading: false })
+    this.setData({ postsLoading: false })
   },
 
   _fetchBatch: async function(skip) {
@@ -104,31 +88,30 @@ Page({
     return res.data || []
   },
 
-  onReachBottom: async function() {
-    if (!this.data.hasMore || this.data.loadingMore || this.data.loading) return
-    this.setData({ loadingMore: true })
+  onScrollBottom: async function() {
+    if (!this.data.postsHasMore || this.data.postsLoadingMore || this.data.postsLoading) return
+    this.setData({ postsLoadingMore: true })
     try {
       var batch = await this._fetchBatch(this._serverSkip)
       var cutoff48 = Date.now() - 48 * 3600 * 1000
       var newPosts = batch.filter(function(p) { return _keepPost(p, cutoff48) })
       this.rawPosts = this.rawPosts.concat(newPosts)
       this._serverSkip += batch.length
-      this.setData({ hasMore: batch.length >= PAGE_SIZE })
+      this.setData({ postsHasMore: batch.length >= PAGE_SIZE })
       this.refreshStatuses()
     } catch(e) {
       wx.showToast({ title: '加载失败', icon: 'none' })
     }
-    this.setData({ loadingMore: false })
+    this.setData({ postsLoadingMore: false })
   },
 
   refreshStatuses: function() {
     var rawPosts = this.rawPosts || []
     var currentPosts = this.data.posts || []
     var nickname = this.data.nickname || ''
-
-    // Process posts, preserving recentMoments from current state
     var myOpenId = wx.getStorageSync('myOpenId') || ''
     var userLat = this._userLat, userLng = this._userLng
+
     var posts = rawPosts.map(function(p) {
       var processed = app.processPost(p)
       if (userLat && userLng && p.locationLat && p.locationLng) {
@@ -138,17 +121,15 @@ Page({
       for (var i = 0; i < currentPosts.length; i++) {
         if (currentPosts[i]._id === p._id) { current = currentPosts[i]; break }
       }
-      if (current && current.recentMoments) {
-        processed.recentMoments = current.recentMoments
-      }
-      if (nickname) {
-        processed.alreadyJoined = (p.joiners || []).indexOf(nickname) !== -1
-      }
-      // 参与者校验：openid 优先，降级用昵称
+      if (current && current.recentMoments) processed.recentMoments = current.recentMoments
       if (myOpenId) {
-        processed.isParticipant = p._openid === myOpenId || (p.joinerOpenids || []).indexOf(myOpenId) !== -1
+        processed.alreadyJoined = (p.joinerOpenids || []).indexOf(myOpenId) !== -1
+        processed.isParticipant = p._openid === myOpenId || processed.alreadyJoined
+        processed.isMine = p._openid === myOpenId || processed.alreadyJoined
       } else if (nickname) {
-        processed.isParticipant = (p.joiners || []).indexOf(nickname) !== -1
+        processed.alreadyJoined = (p.joiners || []).indexOf(nickname) !== -1
+        processed.isParticipant = processed.alreadyJoined
+        processed.isMine = processed.alreadyJoined
       }
       return processed
     })
@@ -161,10 +142,21 @@ Page({
     })
 
     this.setData({ posts: posts, activeCount: activeCount, ongoingCount: ongoingCount })
-    this.applyFilter(this.data.activeFilter)
+    this._applyFilter()
+    this.loadMomentsForOngoing(posts).catch(function() {})
+  },
 
-    // Load moments for ongoing posts (async, non-blocking)
-    this.loadMomentsForOngoing(posts)
+  _applyFilter: function() {
+    var activeTab = this.data.activeTab
+    var posts = this.data.posts || []
+    var active = posts.filter(function(p) {
+      var code = p.gameStatus && p.gameStatus.code
+      return code !== 'finished' && code !== 'cancelled'
+    })
+    var result = activeTab === 'mine'
+      ? active.filter(function(p) { return p.isMine })
+      : active
+    this.setData({ filteredPosts: result })
   },
 
   loadMomentsForOngoing: async function(posts) {
@@ -173,77 +165,77 @@ Page({
     var self = this
     var now = Date.now()
     try {
-      var results = await Promise.all(ongoing.map(function(p) {
-        return db.collection('moments')
-          .where({ postId: p._id })
-          .orderBy('createdAt', 'desc')
-          .limit(3)
-          .get()
-      }))
-
+      var ongoingIds = ongoing.map(function(p) { return p._id })
+      var res = await db.collection('moments')
+        .where({ postId: db.command.in(ongoingIds) })
+        .orderBy('createdAt', 'desc')
+        .limit(ongoingIds.length * 3)
+        .get()
       var momentsByPost = {}
-      ongoing.forEach(function(p, i) {
-        var raw = (results[i] && results[i].data) || []
-        momentsByPost[p._id] = raw.map(function(m) {
-          return {
-            id: m._id,
-            type: m.type || 'text',
-            author: m.author || '',
-            content: m.content || '',
+      ;(res.data || []).forEach(function(m) {
+        if (!momentsByPost[m.postId]) momentsByPost[m.postId] = []
+        if (momentsByPost[m.postId].length < 3) {
+          momentsByPost[m.postId].push({
+            id: m._id, type: m.type || 'text',
+            author: m.author || '', content: m.content || '',
             imageUrls: m.imageUrls || [],
             emoji: m.type === 'photo' ? '📸' : m.type === 'score' ? '🎾' : '✍️',
             nodeClass: 'dot-' + (m.type || 'text'),
             agoLabel: _agoLabel(m.createdAt, now)
-          }
-        })
-      })
-
-      var updatedPosts = self.data.posts.map(function(p) {
-        if (momentsByPost[p._id] !== undefined) {
-          return Object.assign({}, p, { recentMoments: momentsByPost[p._id] })
+          })
         }
+      })
+      var updatedPosts = self.data.posts.map(function(p) {
+        if (momentsByPost[p._id] !== undefined) return Object.assign({}, p, { recentMoments: momentsByPost[p._id] })
         return p
       })
       self.setData({ posts: updatedPosts })
-      self.applyFilter(self.data.activeFilter)
-    } catch(e) {
-      // moments collection may not exist yet — silent
-    }
+      self._applyFilter()
+    } catch(e) {}
   },
 
-  // ── Filter ──
-
-  onFilterTap: function(e) { this.applyFilter(e.currentTarget.dataset.filter) },
-
-  applyFilter: function(filter) {
-    var posts = this.data.posts
-    var filtered = filter === 'all' ? posts : posts.filter(function(p) { return p.level === filter })
-    this.setData({ filteredPosts: filtered, activeFilter: filter })
+  _fetchUserLocation: function() {
+    var self = this
+    wx.getFuzzyLocation({
+      type: 'gcj02',
+      success: function(res) {
+        self._userLat = res.latitude
+        self._userLng = res.longitude
+        if (self.rawPosts && self.rawPosts.length) self.refreshStatuses()
+      },
+      fail: function() {}
+    })
   },
+
+  startRefreshTimer: function() {
+    var self = this
+    this.stopRefreshTimer()
+    this.refreshTimer = setInterval(function() { self.refreshStatuses() }, 30000)
+  },
+
+  stopRefreshTimer: function() {
+    if (this.refreshTimer) { clearInterval(this.refreshTimer); this.refreshTimer = null }
+  },
+
+  // ── 导航 ──
 
   goDetail: function(e) {
     wx.navigateTo({ url: '/pages/detail/detail?id=' + e.currentTarget.dataset.id })
   },
-
-  goPost: function() {
-    var app = getApp()
+  goLive: function() {
+    var posts = this.data.posts || []
+    for (var i = 0; i < posts.length; i++) {
+      if (posts[i].gameStatus.code === 'in-progress') {
+        wx.navigateTo({ url: '/pages/detail/detail?id=' + posts[i]._id })
+        return
+      }
+    }
+  },
+  createMatch: function() {
     app.requireProfile(function() {
       wx.navigateTo({ url: '/pages/post/post' })
     })
   },
-
-  goLive: function() {
-    var posts = this.data.posts || []
-    var livePost = null
-    for (var i = 0; i < posts.length; i++) {
-      if (posts[i].gameStatus.code === 'in-progress') { livePost = posts[i]; break }
-    }
-    if (livePost) {
-      wx.navigateTo({ url: '/pages/detail/detail?id=' + livePost._id })
-    }
-  },
-
-  noop: function() {},
 
   // ── 上传现场照片 ──
 
@@ -293,9 +285,7 @@ Page({
       quickScoreSet: score.set || 1
     })
   },
-
   cancelScore: function() { this.setData({ showScoreOverlay: false }) },
-
   addQuickA: function() { this.setData({ quickScoreA: this.data.quickScoreA + 1 }) },
   subQuickA: function() { if (this.data.quickScoreA > 0) this.setData({ quickScoreA: this.data.quickScoreA - 1 }) },
   addQuickB: function() { this.setData({ quickScoreB: this.data.quickScoreB + 1 }) },
@@ -327,11 +317,25 @@ Page({
         return p
       })
       this.setData({ posts: posts })
-      this.applyFilter(this.data.activeFilter)
+      this._applyFilter()
       wx.showToast({ title: '比分已更新 🎾', icon: 'none' })
     } catch(e) {
       wx.showToast({ title: '更新失败，请重试', icon: 'none' })
     }
+  },
+
+  onMomentImgError: function(e) {
+    var postId = e.currentTarget.dataset.postId
+    var momentId = e.currentTarget.dataset.momentId
+    var posts = this.data.posts.map(function(p) {
+      if (p._id !== postId) return p
+      var moments = (p.recentMoments || []).map(function(m) {
+        if (m.id !== momentId) return m
+        return Object.assign({}, m, { imageUrls: [] })
+      })
+      return Object.assign({}, p, { recentMoments: moments })
+    })
+    this.setData({ posts: posts })
   },
 
   _prependMoment: function(postId, moment) {
@@ -342,8 +346,10 @@ Page({
       return p
     })
     this.setData({ posts: posts })
-    this.applyFilter(this.data.activeFilter)
-  }
+    this._applyFilter()
+  },
+
+  noop: function() {}
 })
 
 function _agoLabel(ts, now) {
@@ -368,10 +374,10 @@ function _calcDistance(lat1, lng1, lat2, lng2) {
 
 function _keepPost(p, cutoff48) {
   if (p.cancelled) return false
+  if (p.manuallyEnded) return false
   if (p.gameTimestamp) {
     var end = p.gameTimestamp + (p.estimatedDuration || 120) * 60 * 1000
     if (end < cutoff48) return false
   }
   return true
 }
-
