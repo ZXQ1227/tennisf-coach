@@ -96,8 +96,8 @@
       </view>
     </view>
 
-    <!-- CTA 入口行 -->
-    <view class="cta-row">
+    <!-- CTA 入口行（未登录） -->
+    <view wx:if="{{!hasProfile}}" class="cta-row">
       <view class="cta-card-training" hover-class="cta-pressed" hover-stay-time="100" bindtap="goTraining">
         <image class="cta-train-player" src="/images/tennis-player.png" mode="aspectFit" />
         <view class="cta-train-glow"></view>
@@ -121,6 +121,58 @@
         </view>
         <view class="cta-coach-arrow">→</view>
       </view>
+    </view>
+
+    <!-- Today 模块（已登录） -->
+    <view wx:if="{{hasProfile}}" class="today-card">
+
+      <!-- 今天已打球 -->
+      <view wx:if="{{isActiveToday}}" class="today-played-wrap">
+        <view class="today-header">
+          <view class="today-header-left">
+            <text class="today-label-txt">今日</text>
+            <text class="today-date-txt">· {{todayDateText}}</text>
+          </view>
+          <view class="today-records-link" bindtap="goTrainingRecords">查看记录 ›</view>
+        </view>
+        <view class="today-played-row">
+          <view class="today-check-circle">✓</view>
+          <view class="today-played-info">
+            <view class="today-played-title">今天已打球 🎾</view>
+            <text wx:if="{{todaySessionInfo}}" class="today-played-meta">{{todaySessionInfo.location}} · {{todaySessionInfo.durationText}} · {{todaySessionInfo.partners}}</text>
+            <text wx:if="{{streak > 1}}" class="today-streak-line">已连续 {{streak}} 天坚持 💪</text>
+          </view>
+        </view>
+        <view class="today-actions">
+          <view class="today-btn-primary" hover-class="today-btn-pressed" bindtap="goTraining">再来一练</view>
+          <view class="today-btn-secondary" hover-class="today-btn-pressed" bindtap="openAICoach">教练助手</view>
+        </view>
+      </view>
+
+      <!-- 今天未打球 - 个性化推荐 -->
+      <view wx:else class="today-plan-wrap">
+        <view class="today-header">
+          <view class="today-header-left">
+            <text class="today-label-txt">今日</text>
+            <text class="today-date-txt">· {{todayDateText}}</text>
+          </view>
+          <view class="today-plan-badge">{{todayPlan.badge}}</view>
+        </view>
+        <view class="today-plan-title">{{todayPlan.title}}</view>
+        <view class="today-plan-sub">{{todayPlan.sub}}</view>
+        <view class="today-plan-meta-row">
+          <text class="today-meta-item">⏱ {{todayPlan.duration}}分钟</text>
+          <text class="today-meta-sep">·</text>
+          <text class="today-meta-item">{{todayPlan.difficulty}}</text>
+          <text class="today-meta-sep">·</text>
+          <text class="today-meta-item">🔥 {{todayPlan.calories}}千卡</text>
+        </view>
+        <view class="today-actions">
+          <view class="today-btn-primary" hover-class="today-btn-pressed" bindtap="goTraining">▶ 开始训练</view>
+          <view class="today-btn-secondary" hover-class="today-btn-pressed" bindtap="goSquare">约球组局</view>
+        </view>
+      </view>
+
     </view>
 
     <!-- 约球邀请 Banner -->

@@ -1,6 +1,37 @@
 var app = getApp()
 var db = wx.cloud.database()
 
+// ── 今日推荐计划逻辑 (与 training.js 共用同一套映射) ──────────
+var _WEAKNESS_PLAN = {
+  '双反':    { title: '双手反手稳定性训练', sub: '强化反手握拍与跟进击球节奏' },
+  '单反':    { title: '单手反手技术训练',   sub: '提升单反引拍时机与发力链' },
+  '反手':    { title: '反手稳定性训练',     sub: '提升反手击球的稳定性和控制力' },
+  '正手':    { title: '正手稳定性训练',     sub: '提升正手击球节奏与落点控制' },
+  '发球':    { title: '发球专项训练',       sub: '提升发球速度与落点精准度' },
+  '发球无力':{ title: '发球力量训练',       sub: '增强发球爆发力与身体旋转协调' },
+  '截击':    { title: '网前截击训练',       sub: '提升网前判断力与接触点控制' },
+  '网前':    { title: '网前技术训练',       sub: '加强上网时机判断与截击手感' },
+  '步伐':    { title: '步伐专项训练',       sub: '提升移位速度与重心控制能力' },
+  '步伐慢':  { title: '步伐灵活性训练',     sub: '改善移动效率与脚步灵活性' },
+  '移动':    { title: '移动步伐训练',       sub: '强化横向移动与急停启动能力' },
+  '下网':    { title: '过网高度控制训练',   sub: '调整击球弧度，减少下网失误' },
+  '不会上旋':{ title: '上旋球技术训练',     sub: '掌握正确的拉球动作与旋转发力' },
+  '高压球':  { title: '高压球专项训练',     sub: '强化头顶球判断与发力节奏' },
+}
+var _GOAL_PLAN = {
+  '稳定对拉': { title: '底线稳定性训练',  sub: '强化底线对拉节奏与容错率' },
+  '发球提升': { title: '发球专项训练',    sub: '提升发球速度与落点精准度' },
+  '上网截击': { title: '上网攻击性训练',  sub: '练习上网时机选择与截击手感' },
+  '步伐改善': { title: '步伐灵活性训练',  sub: '提升移步速度与重心稳定性' },
+  '提高稳定性':{ title: '全场稳定性训练', sub: '减少非受迫性失误，建立技术框架' },
+}
+var _LEVEL_META = {
+  '1.5': { label: '入门', duration: 20 }, '2.0': { label: '初级', duration: 25 },
+  '2.5': { label: '初中级', duration: 30 }, '3.0': { label: '中级', duration: 35 },
+  '3.5': { label: '中高级', duration: 40 }, '4.0': { label: '进阶', duration: 50 },
+  '4.5': { label: '高级', duration: 60 },
+}
+
 var LEVEL_MAP = {
   beginner: { label: '新手', range: '2.0-2.5', color: '#4ECDC4' },
   intermediate: { label: '进阶', range: '3.0-3.5', color: '#F7B731' },
@@ -58,7 +89,10 @@ Page({
     swingTotal: 0,
     insightLine1: '',
     insightLine2: '',
-    radarImageUrl: ''
+    radarImageUrl: '',
+    todayDateText: '',
+    todayPlan: { title: '基础稳定性训练', sub: '全面提升击球基础', badge: '今日推荐', difficulty: '中级', duration: 30, calories: 240 },
+    todaySessionInfo: null,
   },
 
   onLoad: function() {
@@ -78,6 +112,9 @@ Page({
     var partnerNotes = wx.getStorageSync('partnerNotes') || {}
 
     var techScores = hasProfile ? this._computeTechScores(player) : null
+    var DAYNAMES_FULL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
+    var todayDateText = DAYNAMES_FULL[new Date().getDay()]
+    var todayPlan = hasProfile ? this._deriveTodayPlan(player) : this.data.todayPlan
     var self = this
     this.setData({
       player: player || null,
@@ -90,7 +127,9 @@ Page({
       bio: (player && player.bio) || '',
       likedPartners: likedPartners,
       partnerNotes: partnerNotes,
-      techScores: techScores
+      techScores: techScores,
+      todayDateText: todayDateText,
+      todayPlan: todayPlan,
     }, function() {
       if (techScores) self._drawRadarWithRetry(techScores, 0)
     })
@@ -488,6 +527,23 @@ Page({
 
       var isActiveToday = lastActiveLabel === '今天打球了 🎾'
 
+      // Today session info for Today card
+      var todayGames = allRaw.filter(function(p) { return p.date === todayStr && !p.cancelled })
+      var todaySessionInfo = null
+      if (todayGames.length > 0) {
+        var tg = todayGames[0]
+        var tgMins = (tg.manuallyEnded && tg.endedAt && tg.gameTimestamp)
+          ? Math.max(0, Math.floor((tg.endedAt - tg.gameTimestamp) / 60000))
+          : (tg.estimatedDuration || 120)
+        var tgH = Math.floor(tgMins / 60), tgM = tgMins % 60
+        todaySessionInfo = {
+          location: tg.location || '球场',
+          durationText: tgH > 0 ? tgH + 'h' + (tgM > 0 ? tgM + 'm' : '') : tgM + 'm',
+          partners: (tg.joiners || []).filter(function(j) { return j !== nickname }).slice(0, 2).join('、') || '独自练球',
+          count: todayGames.length,
+        }
+      }
+
       // Weekly rhythm: last 7 days
       var DAYNAMES = ['日', '一', '二', '三', '四', '五', '六']
       var weeklyDays = []
@@ -676,7 +732,8 @@ Page({
         recentGames: recentGames, heatmapWeeks: heatmapWeeks,
         weeklyDays: weeklyDays, weeklyCount: weeklyCount, loading: false,
         swingStats: swingStats, swingChartData: swingChartData,
-        swingTotal: swingTotal, insightLine1: insightLine1, insightLine2: insightLine2
+        swingTotal: swingTotal, insightLine1: insightLine1, insightLine2: insightLine2,
+        todaySessionInfo: todaySessionInfo,
       })
       if (swingStats.sessions > 0) this._drawSwingChartWithRetry(swingChartData, 0)
       this._loadSwingChart()
@@ -696,6 +753,30 @@ Page({
       this.setData({ loading: false })
     }
   },
+
+  _deriveTodayPlan: function(player) {
+    var weaknesses = player.weaknesses || []
+    var goals = player.goals || []
+    var ntrpLevel = player.ntrpLevel || ''
+    var title = '基础稳定性训练', sub = '全面提升击球基础', badge = '今日推荐'
+    if (player.aiTrainingFocus) {
+      title = player.aiTrainingFocus; sub = '专属定制训练方案'; badge = '专属推荐'
+    } else if (weaknesses.length > 0) {
+      for (var i = 0; i < weaknesses.length; i++) {
+        var pm = _WEAKNESS_PLAN[weaknesses[i]]
+        if (pm) { title = pm.title; sub = pm.sub; badge = '针对弱点'; break }
+      }
+    } else if (goals.length > 0) {
+      for (var j = 0; j < goals.length; j++) {
+        var gm = _GOAL_PLAN[goals[j]]
+        if (gm) { title = gm.title; sub = gm.sub; badge = '目标训练'; break }
+      }
+    }
+    var lm = _LEVEL_META[ntrpLevel] || { label: '中级', duration: 30 }
+    return { title: title, sub: sub, badge: badge, difficulty: lm.label, duration: lm.duration, calories: Math.round(lm.duration * 8) }
+  },
+
+  goSquare: function() { wx.navigateTo({ url: '/pages/square/square' }) },
 
   _computeTechScores: function(player) {
     if (player.techScores && player.techScores.forehand) return player.techScores
