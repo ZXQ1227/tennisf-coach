@@ -10,21 +10,26 @@
   <!-- 今日训练计划 Banner -->
   <view class="today-plan-card">
     <view class="plan-badge-row">
-      <view class="plan-ai-badge">推荐</view>
+      <view class="plan-ai-badge">{{planBadge}}</view>
     </view>
     <view class="plan-title">{{planTitle}}</view>
     <view class="plan-sub">{{planSub}}</view>
     <view class="plan-meta-row">
-      <text class="plan-meta-item">⏱ 30分钟</text>
+      <text class="plan-meta-item">⏱ {{planDuration}}分钟</text>
       <text class="plan-meta-sep">·</text>
-      <text class="plan-meta-item">中级</text>
+      <text class="plan-meta-item">{{planDifficulty}}</text>
       <text class="plan-meta-sep">·</text>
-      <text class="plan-meta-item">🔥 280千卡</text>
+      <text class="plan-meta-item">🔥 {{planCalories}}千卡</text>
     </view>
     <view class="plan-start-btn" bindtap="startFreeTraining">
       <text class="plan-start-icon">▶</text>
       <text class="plan-start-txt">开始训练</text>
     </view>
+  </view>
+
+  <!-- 无档案引导 -->
+  <view wx:if="{{!hasProfile}}" class="no-profile-tip" bindtap="goSetup">
+    <text class="no-profile-txt">完善球员档案，获取专属训练推荐 →</text>
   </view>
 
   <!-- 技术训练 -->
@@ -34,11 +39,14 @@
   </view>
   <view class="skill-grid">
     <view wx:for="{{skillItems}}" wx:key="key" wx:for-item="item"
-          class="skill-card" hover-class="skill-card-pressed" hover-stay-time="80"
+          class="skill-card {{item.isPriority ? 'skill-card-priority' : ''}} {{item.isStrength ? 'skill-card-strength' : ''}}"
+          hover-class="skill-card-pressed" hover-stay-time="80"
           bindtap="startSkillTraining" data-key="{{item.key}}">
+      <view wx:if="{{item.isPriority}}" class="skill-priority-tag">重点</view>
+      <view wx:elif="{{item.isStrength}}" class="skill-strength-tag">优势</view>
       <text class="skill-card-icon">{{item.icon}}</text>
       <text class="skill-card-name">{{item.name}}</text>
-      <text class="skill-card-count">{{item.count}}次训练</text>
+      <text class="skill-card-count">{{item.count > 0 ? item.count + '次训练' : '未训练'}}</text>
     </view>
   </view>
 
