@@ -94,7 +94,8 @@
                placeholder="点击选择微信昵称"
                placeholder-class="in-ph"
                value="{{nickname}}" bindinput="onNicknameInput"
-               focus="{{focusNick}}" bindfocus="onNickFocus" />
+               focus="{{focusNick}}" bindfocus="onNickFocus"
+               cursor-spacing="200" />
         <view class="in-btn {{(!nickname || saving) ? 'in-btn-dim' : ''}}" bindtap="confirm">
           {{saving ? '…' : '进入'}}
         </view>

@@ -36,10 +36,9 @@
 .content {
   position: relative;
   z-index: 2;
-  height: 100vh;
+  min-height: 100vh;
   display: flex;
   flex-direction: column;
-  overflow: hidden;
 }
 
 /* ── 返回按钮 ── */
