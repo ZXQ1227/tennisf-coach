@@ -12,14 +12,7 @@
     <view class="load-spin"></view>
   </view>
 
-  <!-- 未登录 -->
-  <view wx:elif="{{notLoggedIn}}" class="not-login-wrap">
-    <text class="not-login-icon">🎾</text>
-    <text class="not-login-txt">登录后查看训练记录</text>
-    <view class="not-login-btn" bindtap="goLogin">去登录</view>
-  </view>
-
-  <block wx:elif="{{!notLoggedIn && !loading}}">
+  <block wx:else>
 
   <!-- 月历网格 -->
   <view class="calendar-wrap">

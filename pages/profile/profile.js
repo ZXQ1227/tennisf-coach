@@ -117,7 +117,13 @@ Page({
     wx.navigateTo({ url: '/pages/training/training' })
   },
   goMatches: function() { wx.navigateTo({ url: '/pages/training/training' }) },
-  goTrainingRecords: function() { wx.navigateTo({ url: '/pages/training-records/training-records' }) },
+  goTrainingRecords: function() {
+    if (!app.hasProfile()) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    wx.navigateTo({ url: '/pages/training-records/training-records' })
+  },
 
   openAICoach: function() {
     if (!this.data.hasProfile) { wx.navigateTo({ url: '/pages/login/login' }); return }

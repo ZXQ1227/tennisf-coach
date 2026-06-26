@@ -152,6 +152,11 @@ Page({
   },
 
   goRecords: function() {
+    var app = getApp()
+    if (!app.hasProfile()) {
+      wx.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
     wx.navigateTo({ url: '/pages/training-records/training-records' })
   },
 

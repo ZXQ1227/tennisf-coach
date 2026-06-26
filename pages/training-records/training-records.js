@@ -22,7 +22,6 @@ Page({
     monthTotalMins: 0,
     isCurrentMonth: true,
     loading: true,
-    notLoggedIn: false,
   },
 
   _year: 0,
@@ -41,19 +40,7 @@ Page({
   },
 
   _fetchAndBuild: async function() {
-    if (!app.hasProfile()) {
-      this._dayMap = {}
-      this.setData({
-        notLoggedIn: true,
-        loading: false,
-        calCells: [],
-        selectedSessions: [],
-        selectedDay: 0,
-        monthTrainDays: 0,
-      })
-      return
-    }
-    this.setData({ loading: true, notLoggedIn: false })
+    this.setData({ loading: true })
     try {
       var res = await wx.cloud.callFunction({ name: 'getMyActivity' })
       var result = (res && res.result) || {}
@@ -144,10 +131,6 @@ Page({
       selectedDateTitle: (this._month + 1) + ' 月 ' + cell.day + ' 日',
       selectedSessions: sessions,
     })
-  },
-
-  goLogin: function() {
-    wx.navigateTo({ url: '/pages/login/login' })
   },
 
   prevMonth: function() {
