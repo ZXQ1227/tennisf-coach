@@ -39,7 +39,7 @@
     <view class="flex-spacer" />
 
     <!-- 底部卡片 -->
-    <view class="bottom-card">
+    <view class="bottom-card" style="bottom: {{kbHeight}}px;">
 
       <!-- 特性三列 -->
       <view class="features-row">
@@ -95,7 +95,8 @@
                placeholder-class="in-ph"
                value="{{nickname}}" bindinput="onNicknameInput"
                focus="{{focusNick}}" bindfocus="onNickFocus"
-               cursor-spacing="200" />
+               bindblur="onNickBlur"
+               adjust-position="{{false}}" />
         <view class="in-btn {{(!nickname || saving) ? 'in-btn-dim' : ''}}" bindtap="confirm">
           {{saving ? '…' : '进入'}}
         </view>

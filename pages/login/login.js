@@ -9,6 +9,7 @@ Page({
     canGoBack: false,
     showNickBar: false,
     focusNick: false,
+    kbHeight: 0,
     statusBarHeight: 44
   },
 
@@ -60,7 +61,13 @@ Page({
     })
   },
 
-  onNickFocus: function() {},
+  onNickFocus: function(e) {
+    this.setData({ kbHeight: e.detail.height || 0 })
+  },
+
+  onNickBlur: function() {
+    this.setData({ kbHeight: 0 })
+  },
 
   onNicknameInput: function(e) {
     this.setData({ nickname: e.detail.value })
