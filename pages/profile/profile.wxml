@@ -20,7 +20,7 @@
           <view wx:if="{{isActiveToday}}" class="home-av-dot"></view>
         </view>
         <view class="home-greeting-text">
-          <view wx:if="{{hasProfile}}" class="greeting-hi">Hi, {{nickname}}<view class="greeting-edit-icon" bindtap="goEdit">✎</view></view>
+          <view wx:if="{{hasProfile}}" class="greeting-hi">Hi, {{nickname}}<image class="greeting-edit-icon" bindtap="goEdit" src="/images/icons/edit.svg"/></view>
           <view wx:else class="greeting-hi greeting-guest">登录后记录你的成长</view>
         </view>
       </view>
@@ -73,27 +73,108 @@
       </view>
     </view>
 
-    <!-- 球员档案卡 -->
-    <view class="home-card" wx:if="{{techScores}}">
-      <view class="home-card-hd">
-        <view class="home-card-title-wrap">
-          <text class="home-card-title">球员档案</text>
-          <text class="home-card-info-icon">ⓘ</text>
+    <!-- 我的成长进度 -->
+    <view wx:if="{{hasProfile}}" class="home-card growth-card">
+      <!-- 标题行 -->
+      <view class="growth-hd">
+        <view class="growth-title-row">
+          <text class="growth-title">成长进度</text>
+          <text class="growth-info-icon">ⓘ</text>
         </view>
       </view>
-      <view class="profile-card-body">
-        <canvas id="radar" type="2d" class="home-radar-canvas {{radarImgSrc ? 'radar-offscreen' : ''}}"></canvas>
-        <image wx:if="{{radarImgSrc}}" src="{{radarImgSrc}}" class="home-radar-canvas" mode="aspectFill" />
-        <view class="profile-insight">
-          <text class="insight-line">{{insightLine1}}</text>
-          <text class="insight-line">{{insightLine2}}</text>
-          <text class="insight-line insight-dim">让技术更全面</text>
-          <view class="skill-report-btn" bindtap="goEdit">
-            <text class="skill-report-icon">📋</text>
-            <text class="skill-report-txt">技能分析报告</text>
+      <text class="growth-sub">你离下一个等级还有多远？</text>
+
+      <!-- NTRP 等级 + 进度条 -->
+      <view class="growth-level-row">
+        <view class="growth-level-left">
+          <text class="growth-ntrp-label">NTRP</text>
+          <text class="growth-ntrp-val">{{player.ntrpLevel || '2.5'}}</text>
+        </view>
+        <view class="growth-progress-wrap">
+          <view class="growth-progress-bar">
+            <view class="growth-progress-fill {{suggestUpgrade ? 'growth-fill-max' : ''}}" style="width:{{ntrpProgress}}%"></view>
+          </view>
+          <view class="growth-progress-labels">
+            <text class="growth-pct">{{ntrpProgressDisplay}}</text>
+            <text class="growth-remain" wx:if="{{!suggestUpgrade}}">距离{{nextNTRP || '下一级'}}还有{{remainToUpgrade}}%</text>
+            <text class="growth-remain growth-upgrade-hint" wx:if="{{suggestUpgrade}}">🎉 建议升级到 NTRP {{nextNTRP || '下一级'}}</text>
           </view>
         </view>
       </view>
+
+      <!-- 升级提示卡 -->
+      <view wx:if="{{suggestUpgrade}}" class="growth-upgrade-card" bindtap="goEdit">
+        <view class="upgrade-card-inner">
+          <text class="upgrade-card-icon">🎉</text>
+          <text class="upgrade-card-title">你已达到 NTRP {{nextNTRP || '下一级'}} 的水平！</text>
+          <text class="upgrade-card-sub">前往设置页确认升级</text>
+          <view class="upgrade-card-btn">确认升级 →</view>
+        </view>
+      </view>
+
+      <!-- 空态：数据积累中 -->
+      <view wx:if="{{!growthHasData}}" class="growth-empty">
+        <text class="growth-empty-icon">📈</text>
+        <text class="growth-empty-title">数据积累中</text>
+        <text class="growth-empty-sub">完成 3 次训练后解锁成长曲线（当前 {{growthSnapshotCount}}/3）</text>
+      </view>
+
+      <!-- 折线图 canvas -->
+      <canvas wx:if="{{growthHasData}}" id="growthChart" type="2d" class="growth-canvas"
+        bindtouchstart="onGrowthTouchStart"
+        bindtouchmove="onGrowthTouchMove"
+        bindtouchend="onGrowthTouchEnd"
+      ></canvas>
+
+      <!-- 图例 -->
+      <view wx:if="{{growthHasData}}" class="growth-legend-row">
+        <view class="growth-legend-line"></view>
+        <view class="growth-legend-dot"></view>
+        <text class="growth-legend-txt">成长进度</text>
+      </view>
+    </view>
+
+    <!-- 三栏行：重点提升 + 开始训练 + AI教练 -->
+    <view wx:if="{{hasProfile}}" class="action-row">
+
+      <!-- 当前重点提升 -->
+      <view class="action-col afc-col" hover-class="action-pressed" bindtap="goSkillFocus">
+        <view class="afc-hd">
+          <text class="afc-icon">⊙</text>
+          <text class="afc-title">当前重点提升</text>
+        </view>
+        <view wx:if="{{currentFocus}}" class="afc-body">
+          <view class="afc-content">
+            <text class="afc-skill-name">{{currentFocus.skillName}}</text>
+            <view class="afc-badge"><text class="afc-badge-txt">进行中</text></view>
+            <text class="afc-desc">{{currentFocus.description}}</text>
+          </view>
+          <view class="afc-arc-wrap">
+            <canvas id="focusArc" type="2d" class="afc-arc-canvas"></canvas>
+            <view class="afc-arc-center">
+              <text class="afc-arc-pct">{{currentFocus.pct}}%</text>
+              <text class="afc-arc-lab">掌握度</text>
+            </view>
+          </view>
+        </view>
+        <view class="afc-arrow">→</view>
+      </view>
+
+      <!-- AI 教练（复用已有卡片） -->
+      <view class="cta-card-coach" hover-class="cta-pressed" hover-stay-time="100" bindtap="openAICoach">
+        <view class="cta-coach-glow"></view>
+        <image class="cta-coach-brain" src="/images/ai-brain.svg" mode="aspectFit"></image>
+        <view class="cta-coach-content">
+          <view class="cta-coach-title-row">
+            <text class="cta-coach-title">教练</text>
+            <view class="cta-coach-beta">Beta</view>
+          </view>
+          <text class="cta-coach-sub">分析你的表现</text>
+          <text class="cta-coach-sub">给出专业建议</text>
+        </view>
+        <view class="cta-coach-arrow">→</view>
+      </view>
+
     </view>
 
     <!-- CTA 入口行（未登录） -->
@@ -110,7 +191,7 @@
       </view>
       <view class="cta-card-coach" hover-class="cta-pressed" hover-stay-time="100" bindtap="openAICoach">
         <view class="cta-coach-glow"></view>
-        <view class="cta-coach-brain">🧠</view>
+        <image class="cta-coach-brain" src="/images/ai-brain.svg" mode="aspectFit"></image>
         <view class="cta-coach-content">
           <view class="cta-coach-title-row">
             <text class="cta-coach-title">教练</text>
@@ -123,63 +204,33 @@
       </view>
     </view>
 
-    <!-- Today 模块（已登录） -->
-    <view wx:if="{{hasProfile}}" class="today-card">
-
-      <!-- 今天已打球 -->
-      <view wx:if="{{isActiveToday}}" class="today-played-wrap">
-        <view class="today-header">
-          <view class="today-header-left">
-            <text class="today-label-txt">今日</text>
-            <text class="today-date-txt">· {{todayDateText}}</text>
-          </view>
-          <view class="today-records-link" bindtap="goTrainingRecords">查看记录 ›</view>
+    <!-- 待开场球局（有邀请时显示） -->
+    <view wx:if="{{hasProfile && inviteCount > 0}}" class="home-card session-card">
+      <view class="session-hd">
+        <view class="session-hd-left">
+          <text class="session-title">待开场球局</text>
+          <view class="session-count-badge"><text class="session-count">{{inviteCount}}</text></view>
         </view>
-        <view class="today-played-row">
-          <view class="today-check-circle">✓</view>
-          <view class="today-played-info">
-            <view class="today-played-title">今天已打球 🎾</view>
-            <text wx:if="{{todaySessionInfo}}" class="today-played-meta">{{todaySessionInfo.location}} · {{todaySessionInfo.durationText}} · {{todaySessionInfo.partners}}</text>
-            <text wx:if="{{streak > 1}}" class="today-streak-line">已连续 {{streak}} 天坚持 💪</text>
-          </view>
-        </view>
-        <view class="today-actions">
-          <view class="today-btn-primary" hover-class="today-btn-pressed" bindtap="goTraining">再来一练</view>
-          <view class="today-btn-secondary" hover-class="today-btn-pressed" bindtap="openAICoach">教练助手</view>
+        <view class="session-see-all" bindtap="openInviteSheet">
+          <text class="session-see-txt">查看全部 ›</text>
         </view>
       </view>
-
-      <!-- 今天未打球 - 个性化推荐 -->
-      <view wx:else class="today-plan-wrap">
-        <view class="today-header">
-          <view class="today-header-left">
-            <text class="today-label-txt">今日</text>
-            <text class="today-date-txt">· {{todayDateText}}</text>
+      <view class="session-list">
+        <view wx:for="{{invites}}" wx:key="_id" wx:for-item="inv" wx:if="{{index < 3}}" class="session-item">
+          <view class="session-avatar">
+            <text class="session-avatar-txt">{{inv.fromNickname ? inv.fromNickname.slice(-1) : '?'}}</text>
           </view>
-          <view class="today-plan-badge">{{todayPlan.badge}}</view>
-        </view>
-        <view class="today-plan-title">{{todayPlan.title}}</view>
-        <view class="today-plan-sub">{{todayPlan.sub}}</view>
-        <view class="today-plan-meta-row">
-          <text class="today-meta-item">⏱ {{todayPlan.duration}}分钟</text>
-          <text class="today-meta-sep">·</text>
-          <text class="today-meta-item">{{todayPlan.difficulty}}</text>
-          <text class="today-meta-sep">·</text>
-          <text class="today-meta-item">🔥 {{todayPlan.calories}}千卡</text>
-        </view>
-        <view class="today-actions">
-          <view class="today-btn-primary" hover-class="today-btn-pressed" bindtap="goTraining">▶ 开始训练</view>
-          <view class="today-btn-secondary" hover-class="today-btn-pressed" bindtap="goSquare">约球组局</view>
+          <view class="session-item-info">
+            <text class="session-item-from">{{inv.fromNickname}}</text>
+            <text class="session-item-label"> 想约你打球 🎾</text>
+          </view>
+          <view class="session-accept-btn" catchtap="acceptInvite" data-id="{{inv._id}}" data-from="{{inv.fromNickname}}" data-postid="{{inv.postId}}">
+            <text class="session-accept-txt">接受</text>
+          </view>
         </view>
       </view>
-
-    </view>
-
-    <!-- 约球邀请 Banner -->
-    <view class="home-section-pad" wx:if="{{inviteCount > 0}}">
-      <view class="invite-banner" bindtap="openInviteSheet">
-        <text class="invite-banner-txt">🎾 有 {{inviteCount}} 条约球邀请</text>
-        <text class="invite-banner-arr">›</text>
+      <view wx:if="{{inviteCount > 3}}" class="session-more">
+        <text class="session-more-txt">还有 {{inviteCount - 3}} 个球局邀请</text>
       </view>
     </view>
 
@@ -189,6 +240,20 @@
         <text class="home-card-title">打球记录</text>
         <text class="home-card-more">本周 {{weeklyCount}} 次 ›</text>
       </view>
+
+      <!-- 一周日历 -->
+      <view class="weekly-grid">
+        <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
+          <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
+          <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
+            <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
+          </view>
+          <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
+        </view>
+      </view>
+
+      <!-- 分割线 -->
+      <view class="record-divider"></view>
 
       <!-- 挥拍摘要 -->
       <view wx:if="{{swingStats.sessions > 0}}" class="swing-summary-row">
@@ -208,20 +273,6 @@
       <view wx:else class="swing-empty">
         <text class="swing-empty-icon">⌚</text>
         <text class="swing-empty-txt">完成训练后可上报手表挥拍数据</text>
-      </view>
-
-      <!-- 分割线 -->
-      <view class="record-divider"></view>
-
-      <!-- 一周日历 -->
-      <view class="weekly-grid">
-        <view wx:for="{{weeklyDays}}" wx:key="date" wx:for-item="day" class="wd-col">
-          <text class="wd-name {{day.isToday ? 'wd-today' : ''}}">{{day.dayName}}</text>
-          <view class="wd-circle {{day.hasGame ? 'wd-on' : 'wd-off'}}">
-            <text wx:if="{{day.hasGame}}" class="wd-ball">🎾</text>
-          </view>
-          <text class="wd-dur {{day.hasGame ? 'wd-dur-on' : ''}}">{{day.durationText || '—'}}</text>
-        </view>
       </view>
     </view>
 
@@ -269,7 +320,7 @@
       </view>
       <view class="invite-actions">
         <view class="invite-ignore" catchtap="ignoreInvite" data-id="{{inv._id}}">先忽略</view>
-        <view class="invite-accept" catchtap="acceptInvite" data-id="{{inv._id}}" data-from="{{inv.fromNickname}}">接受约球 →</view>
+        <view class="invite-accept" catchtap="acceptInvite" data-id="{{inv._id}}" data-from="{{inv.fromNickname}}" data-postid="{{inv.postId}}">接受约球 →</view>
       </view>
     </view>
   </view>
@@ -295,6 +346,32 @@
   </view>
 </view>
 
+
+<!-- ══ 成长事件弹窗 ══ -->
+<view class="growth-popup-mask" wx:if="{{growthEventPopup}}" bindtap="closeGrowthEventPopup">
+  <view class="growth-popup" catchtap="noop">
+    <view class="growth-popup-hd">
+      <text class="growth-popup-date">{{growthEventPopup.dateStr}}</text>
+      <text class="growth-popup-close" bindtap="closeGrowthEventPopup"><image src="/images/icons/close.svg" class="icon-close-s"/></text>
+    </view>
+    <view class="growth-popup-icon-row">
+      <text class="growth-popup-icon">📈</text>
+      <text class="growth-popup-label">{{growthEventPopup.label}}</text>
+    </view>
+    <text class="growth-popup-detail">{{growthEventPopup.detail}}</text>
+    <view class="growth-popup-score-row">
+      <text class="growth-popup-score-key">AI 评分</text>
+      <view class="growth-popup-score-val">
+        <text class="growth-popup-old">{{growthEventPopup.scoreBefore}}</text>
+        <text class="growth-popup-arrow"> → </text>
+        <text class="growth-popup-new">{{growthEventPopup.scoreAfter}}</text>
+      </view>
+    </view>
+    <view class="growth-popup-close-btn" bindtap="closeGrowthEventPopup">
+      <text>知道了</text>
+    </view>
+  </view>
+</view>
 
 <!-- ══ 留言 Sheet ══ -->
 <view class="sheet-overlay" wx:if="{{noteSheetOpen}}" bindtap="closeNoteSheet">

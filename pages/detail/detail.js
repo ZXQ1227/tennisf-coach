@@ -7,6 +7,9 @@ Page({
     post: null,
     myName: '',
     joining: false,
+    statusBarHeight: 0,
+    navTopPx: 44,
+    navBarHeight: 88,
     alreadyJoined: false,
     isCreator: false,
     isParticipant: false,
@@ -31,7 +34,11 @@ Page({
     var player = getApp().globalData.player
     var savedNickname = (player && player.nickname) || wx.getStorageSync('nickname') || ''
     var savedAvatar = (player && player.avatarUrl) || wx.getStorageSync('avatarUrl') || ''
-    this.setData({ myName: savedNickname, sheetAvatarUrl: savedAvatar })
+    var sysInfo = wx.getSystemInfoSync()
+    var menu = wx.getMenuButtonBoundingClientRect()
+    var navTopPx = menu.top
+    var navBarHeight = menu.top + menu.height + 8
+    this.setData({ statusBarHeight: sysInfo.statusBarHeight || 44, navTopPx: navTopPx, navBarHeight: navBarHeight, myName: savedNickname, sheetAvatarUrl: savedAvatar })
     this.loadPost()
     this.loadGallery()
   },
@@ -51,7 +58,7 @@ Page({
       var photos = []
       ;(res.data || []).forEach(function(m) { photos = photos.concat(m.imageUrls || []) })
       this.setData({ galleryPhotos: photos })
-    } catch(e) {}
+    } catch(e) { console.error('[detail] loadGallery failed:', e) }
   },
 
   previewGallery: function(e) {
@@ -183,7 +190,7 @@ Page({
         })
         this.setData({ displaySlots: updated })
       }
-    } catch(e) {}
+    } catch(e) { console.error('[detail] loadPost slots failed:', e) }
   },
 
   // 接受预留邀请（复用 join 逻辑）
@@ -384,7 +391,12 @@ Page({
   },
 
   goIndex: function() {
-    wx.navigateBack()
+    var pages = getCurrentPages()
+    if (pages.length > 1) {
+      wx.navigateBack()
+    } else {
+      wx.reLaunch({ url: '/pages/profile/profile' })
+    }
   },
 
   // ── 上传现场照片 ──
@@ -395,8 +407,8 @@ Page({
     var myName = this.data.myName || '球友'
     var self = this
     try {
-      var res = await wx.chooseImage({ count: 4, sizeType: ['compressed'], sourceType: ['album', 'camera'] })
-      var paths = res.tempFilePaths || []
+      var res = await wx.chooseMedia({ count: 4, mediaType: ['image'], sizeType: ['compressed'], sourceType: ['album', 'camera'] })
+      var paths = (res.tempFiles || []).map(function(f) { return f.tempFilePath })
       if (!paths.length) return
       self.setData({ uploading: true })
       wx.showLoading({ title: '上传中...' })
@@ -426,8 +438,16 @@ Page({
   // ── 局分 Sheet ──
 
   openScoreSheet: function() {
-    var score = (this.data.post && this.data.post.liveScore) || {}
-    this.setData({ showScoreSheet: true, quickScoreA: score.a || 0, quickScoreB: score.b || 0, quickScoreSet: score.set || 1 })
+    var ls = (this.data.post && this.data.post.liveScore) || {}
+    // 兼容新旧格式
+    if (ls.gameA !== undefined) {
+      // 新格式：显示盘分和局分
+      var setsWonA = (ls.sets || []).filter(function(s) { return s.gamesA > s.gamesB }).length
+      var setsWonB = (ls.sets || []).filter(function(s) { return s.gamesB > s.gamesA }).length
+      this.setData({ showScoreSheet: true, quickScoreA: setsWonA, quickScoreB: setsWonB, quickScoreSet: ls.currentSet || 1 })
+    } else {
+      this.setData({ showScoreSheet: true, quickScoreA: ls.a || 0, quickScoreB: ls.b || 0, quickScoreSet: ls.set || 1 })
+    }
   },
   closeScoreSheet: function() { this.setData({ showScoreSheet: false }) },
   noop: function() {},
@@ -478,6 +498,8 @@ Page({
   enterTennisMode: function() {
     wx.navigateTo({ url: '/pages/tennis-mode/tennis-mode?id=' + this.postId })
   },
+
+  goHome: function() { wx.reLaunch({ url: '/pages/profile/profile' }) },
 
   generatePoster: function() {
     var self = this

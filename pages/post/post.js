@@ -270,7 +270,7 @@ Page({
     try {
       var res = await db.collection('players').where({ nickname: partnerName }).limit(1).get()
       if (res.data && res.data[0]) avatarUrl = res.data[0].avatarUrl || ''
-    } catch(e) {}
+    } catch(e) { console.error('[post] slot partner avatar query failed:', e) }
     var newSlots = slots.map(function(s) {
       if (s.slotIndex === 1 && s.status === 'OPEN') {
         return { slotIndex: 1, status: 'RESERVED', nickname: partnerName, avatarUrl: avatarUrl, avatarColor: slotColor(partnerName) }
@@ -376,7 +376,7 @@ Page({
       try {
         const r = await wx.cloud.callFunction({ name: 'getOpenId' })
         myOpenid = r.result.openid
-      } catch(e) {}
+      } catch(e) { console.error('[post] getOpenId failed:', e) }
 
       // 同步 slot 0 昵称（可能在 onShow 之后昵称更新了）
       var slots = data.slots.slice()
@@ -414,7 +414,19 @@ Page({
         }
       })
 
+      // 为预留坑位的球友发送带 postId 的约球邀请
+      var postId = addRes._id
+      slots.forEach(function(s) {
+        if (s.status === 'RESERVED' && s.nickname && s.nickname !== nickname) {
+          wx.cloud.callFunction({
+            name: 'sendInvite',
+            data: { toNickname: s.nickname, fromNickname: nickname, postId: postId }
+          }).catch(function() {})
+        }
+      })
+
       wx.setStorageSync('nickname', data.nickname)
+      getApp().globalData.activityStale = true
       if (this._autoTennisMode && addRes && addRes._id) {
         wx.showToast({ title: '开赛 🎾', icon: 'none' })
         setTimeout(function() {

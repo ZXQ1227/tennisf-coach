@@ -32,6 +32,20 @@ var _LEVEL_META = {
   '4.5': { label: '高级', duration: 60 },
 }
 
+// NTRP 等级对应的综合评分区间（用于计算成长进度）
+var _NTRP_SCORE_RANGE = {
+  '1.5': { min: 10, max: 20 },
+  '2.0': { min: 20, max: 32 },
+  '2.5': { min: 32, max: 45 },
+  '3.0': { min: 45, max: 58 },
+  '3.5': { min: 58, max: 72 },
+  '4.0': { min: 72, max: 85 },
+  '4.5': { min: 85, max: 99 },
+}
+
+// NTRP 等级顺序（用于确定下一级）
+var _NTRP_ORDER = ['1.5', '2.0', '2.5', '3.0', '3.5', '4.0', '4.5']
+
 var LEVEL_MAP = {
   beginner: { label: '新手', range: '2.0-2.5', color: '#4ECDC4' },
   intermediate: { label: '进阶', range: '3.0-3.5', color: '#F7B731' },
@@ -53,8 +67,22 @@ Page({
     levelInfo: null,
     styleLabel: '',
     bio: '',
-    techScores: null,
-    radarImgSrc: '',
+    overallScore: 0,
+    scoreChange: 0,
+    ntrpProgress: 0,         // NTRP 等级成长进度百分比
+    nextNTRP: '',            // 下一级 NTRP 等级
+    suggestUpgrade: false,   // 是否建议升级
+    ntrpProgressDisplay: '', // 进度显示文字 如 "72%"
+    ntrpLevelLabel: '',     // 当前等级标签 如 "初中级"
+    remainToUpgrade: 0,     // 距升级还差多少
+    growthSnapshotCount: 0,
+    growthPoints: [],
+    growthMilestones: [],
+    growthViewStart: 13,
+    growthHasData: false,
+    growthSnapshotCount: 0,
+    currentFocus: null,
+    growthEventPopup: null,
     totalGames: 0,
     monthlyGames: 0,
     streak: 0,
@@ -87,9 +115,6 @@ Page({
     statusBarHeight: 0,
     weeklyCount: 0,
     swingTotal: 0,
-    insightLine1: '',
-    insightLine2: '',
-    radarImageUrl: '',
     todayDateText: '',
     todayPlan: { title: '基础稳定性训练', sub: '全面提升击球基础', badge: '今日推荐', difficulty: '中级', duration: 30, calories: 240 },
     todaySessionInfo: null,
@@ -111,7 +136,6 @@ Page({
     var likedPartners = wx.getStorageSync('likedPartners') || {}
     var partnerNotes = wx.getStorageSync('partnerNotes') || {}
 
-    var techScores = hasProfile ? this._computeTechScores(player) : null
     var DAYNAMES_FULL = ['周日', '周一', '周二', '周三', '周四', '周五', '周六']
     var todayDateText = DAYNAMES_FULL[new Date().getDay()]
     var todayPlan = hasProfile ? this._deriveTodayPlan(player) : this.data.todayPlan
@@ -127,14 +151,17 @@ Page({
       bio: (player && player.bio) || '',
       likedPartners: likedPartners,
       partnerNotes: partnerNotes,
-      techScores: techScores,
       todayDateText: todayDateText,
       todayPlan: todayPlan,
-    }, function() {
-      if (techScores) self._drawRadarWithRetry(techScores, 0)
     })
+    if (this.data.growthHasData && this.data.growthPoints && this.data.growthPoints.length) {
+      this._drawGrowthChartWithRetry(this.data.growthPoints, this.data.growthMilestones, this.data.growthViewStart, 0)
+    }
+    if (this.data.currentFocus) {
+      this._drawFocusArcWithRetry(this.data.currentFocus.pct, 0)
+    }
     var now = Date.now()
-    var stale = !this._lastLoadTs || (now - this._lastLoadTs) > 30000
+    var stale = !this._lastLoadTs || (now - this._lastLoadTs) > 5000 || app.globalData.activityStale
     if (stale) {
       this._lastLoadTs = now
       if (hasProfile) {
@@ -152,7 +179,6 @@ Page({
     wx.navigateTo({ url: '/pages/setup/setup?mode=edit' })
   },
   goTraining: function() {
-    if (!this.data.hasProfile) { wx.navigateTo({ url: '/pages/login/login' }); return }
     wx.navigateTo({ url: '/pages/training/training' })
   },
   goMatches: function() { wx.navigateTo({ url: '/pages/training/training' }) },
@@ -281,7 +307,7 @@ Page({
       var res = await wx.cloud.callFunction({ name: 'getInvitations' })
       var invites = (res && res.result && res.result.invitations) || []
       this.setData({ invites: invites, inviteCount: invites.length })
-    } catch(e) {}
+    } catch(e) { console.error('[profile] loadInvites failed:', e) }
   },
 
   openInviteSheet: function() { this.setData({ showInviteSheet: true }) },
@@ -290,21 +316,26 @@ Page({
   acceptInvite: async function(e) {
     var inviteId = e.currentTarget.dataset.id
     var fromNickname = e.currentTarget.dataset.from
+    var postId = e.currentTarget.dataset.postid
     try {
       await wx.cloud.callFunction({ name: 'respondInvite', data: { inviteId: inviteId, action: 'accept' } })
-    } catch(e) {}
+    } catch(e) { console.error('[profile] acceptInvite failed:', e) }
     var invites = this.data.invites.filter(function(i) { return i._id !== inviteId })
     this.setData({ invites: invites, inviteCount: invites.length, showInviteSheet: false })
-    wx.setStorageSync('postPrefillNote', '约 ' + fromNickname + ' 一起打')
-    wx.setStorageSync('postPrefillPartner', fromNickname)
-    wx.navigateTo({ url: '/pages/post/post' })
+    if (postId) {
+      wx.navigateTo({ url: '/pages/detail/detail?id=' + postId })
+    } else {
+      wx.setStorageSync('postPrefillNote', '约 ' + fromNickname + ' 一起打')
+      wx.setStorageSync('postPrefillPartner', fromNickname)
+      wx.navigateTo({ url: '/pages/post/post' })
+    }
   },
 
   ignoreInvite: async function(e) {
     var inviteId = e.currentTarget.dataset.id
     try {
       await wx.cloud.callFunction({ name: 'respondInvite', data: { inviteId: inviteId, action: 'ignore' } })
-    } catch(e) {}
+    } catch(e) { console.error('[profile] ignoreInvite failed:', e) }
     var invites = this.data.invites.filter(function(i) { return i._id !== inviteId })
     this.setData({ invites: invites, inviteCount: invites.length })
     if (invites.length === 0) this.setData({ showInviteSheet: false })
@@ -325,6 +356,7 @@ Page({
   },
 
   loadActivity: async function() {
+    app.globalData.activityStale = false
     this.setData({ loading: true })
     try {
       var callRes = await wx.cloud.callFunction({ name: 'getMyActivity' })
@@ -344,8 +376,24 @@ Page({
       var monthStr = now.getFullYear() + '-' + pad(now.getMonth() + 1)
       var todayStr = now.getFullYear() + '-' + pad(now.getMonth() + 1) + '-' + pad(now.getDate())
 
-      var totalGames = allRaw.length
+      // 提前拉取训练快照，合并到统计数据 + 刷新 globalData
+      var scoreSnapshots = []
+      var scoreMilestones = []
+      try {
+        var snapRes = await wx.cloud.callFunction({ name: 'getPlayer' })
+        var snapPlayer = (snapRes && snapRes.result && snapRes.result.player) || {}
+        if (snapPlayer._id) {
+          app.globalData.player = Object.assign({}, app.globalData.player, snapPlayer)
+        }
+        scoreSnapshots = snapPlayer.scoreSnapshots || []
+        scoreMilestones = snapPlayer.scoreMilestones || []
+      } catch(e) { console.error('[profile] early getPlayer failed:', e) }
+
+      var totalGames = allRaw.length + scoreSnapshots.length
       var monthlyGames = allRaw.filter(function(p) { return p.date && p.date.indexOf(monthStr) === 0 }).length
+      scoreSnapshots.forEach(function(s) {
+        if (s.date && s.date.indexOf(monthStr) === 0) monthlyGames++
+      })
 
       var courtCounts = {}
       allRaw.forEach(function(p) {
@@ -356,6 +404,7 @@ Page({
 
       var gameDates = {}
       allRaw.forEach(function(p) { if (p.date) gameDates[p.date] = true })
+      scoreSnapshots.forEach(function(s) { if (s.date) gameDates[s.date] = true })
       var streak = 0
       for (var i = 0; i < 60; i++) {
         var d = new Date(now)
@@ -395,7 +444,7 @@ Page({
           var avatarMap = {}
           ;(avatarRes.data || []).forEach(function(p) { avatarMap[p.nickname] = p.avatarUrl || '' })
           partners = partners.map(function(p) { return Object.assign({}, p, { avatarUrl: avatarMap[p.name] || '' }) })
-        } catch(e) {}
+        } catch(e) { console.error('[profile] loadActivity avatar query failed:', e) }
       }
 
       // Per-day data for heatmap + total hours
@@ -408,6 +457,16 @@ Page({
           ? Math.max(0, Math.floor((p.endedAt - p.gameTimestamp) / 60000))
           : (p.estimatedDuration || 120)
         dayMatchData[p.date].minutes += minutes
+      })
+      // 合并训练快照的时长
+      scoreSnapshots.forEach(function(s) {
+        if (!s.date) return
+        if (!dayMatchData[s.date]) dayMatchData[s.date] = { count: 0, minutes: 0 }
+        dayMatchData[s.date].count++
+        var trainingMins = s.sessionData && s.sessionData.elapsed
+          ? Math.floor(s.sessionData.elapsed / 60)
+          : 30
+        dayMatchData[s.date].minutes += trainingMins
       })
 
       var prevMonthDate = new Date(now.getFullYear(), now.getMonth() - 1, 1)
@@ -480,10 +539,18 @@ Page({
           ? opponents.slice(0, 2).join('、') + ' 等' + opponents.length + '人'
           : opponents.join('、')
 
-        // 比分（liveScore 存储当前/最终盘分）
+        // 比分（兼容新旧 liveScore 格式）
         var ls = p.liveScore
         var scoreText = ''
-        if (ls && ls.a !== undefined && ls.b !== undefined) {
+        if (ls && ls.gameA !== undefined) {
+          // 新格式：显示盘分胜负数
+          var _swA = (ls.sets || []).filter(function(s) { return s.gamesA > s.gamesB }).length
+          var _swB = (ls.sets || []).filter(function(s) { return s.gamesB > s.gamesA }).length
+          scoreText = '盘 ' + _swA + ':' + _swB
+          if (!ls.matchOver && (ls.gamesA > 0 || ls.gamesB > 0)) {
+            scoreText += ' · 局 ' + ls.gamesA + ':' + ls.gamesB
+          }
+        } else if (ls && ls.a !== undefined && ls.b !== undefined) {
           scoreText = ls.a + ':' + ls.b
           if (ls.set && ls.set > 1) scoreText += '（第' + ls.set + '盘）'
         }
@@ -525,10 +592,9 @@ Page({
         })
       })
 
-      var isActiveToday = lastActiveLabel === '今天打球了 🎾'
-
       // Today session info for Today card
       var todayGames = allRaw.filter(function(p) { return p.date === todayStr && !p.cancelled })
+      var isActiveToday = todayGames.length > 0
       var todaySessionInfo = null
       if (todayGames.length > 0) {
         var tg = todayGames[0]
@@ -707,18 +773,27 @@ Page({
 
       var weeklyCount = weeklyDays.filter(function(d) { return d.hasGame }).length
 
-      // Compute insight lines from techScores
-      var insightLine1 = '', insightLine2 = ''
-      var ts = this._computeTechScores(this.data.player || freshPlayer)
-      if (ts) {
-        var SKILL_NAMES = { forehand: '正手', backhand: '反手', serve: '发球', volley: '截击', footwork: '步伐' }
-        var skillPairs = Object.keys(ts).filter(function(k) { return SKILL_NAMES[k] }).map(function(k) { return { key: k, name: SKILL_NAMES[k], val: ts[k] } })
-        if (skillPairs.length > 0) {
-          skillPairs.sort(function(a, b) { return b.val - a.val })
-          insightLine1 = '你的' + skillPairs[0].name + '表现突出'
-          insightLine2 = '继续加强' + skillPairs[skillPairs.length - 1].name
+      // 计算综合评分 + 成长曲线
+      var freshPlayerRef = this.data.player || freshPlayer
+      // 合并最新 swingStats（getPlayer 可能已刷新）
+      if (app.globalData.player && app.globalData.player.swingStats) {
+        var gs = app.globalData.player.swingStats
+        swingStats = {
+          fhTotal: gs.fhTotal || 0, bhTotal: gs.bhTotal || 0,
+          svTotal: gs.svTotal || 0, vlTotal: gs.vlTotal || 0,
+          sessions: gs.sessions || 0,
+          lastSession: swingStats.lastSession
         }
+        freshPlayerRef = app.globalData.player
       }
+
+      var ts = this._computeTechScores(freshPlayerRef)
+      var overallScore = ts ? this._computeWeightedScore(ts, allRaw, swingStats, freshPlayerRef) : 0
+      var growthResult = this._computeGrowthData(allRaw, overallScore, freshPlayerRef, scoreSnapshots, scoreMilestones)
+      var currentFocus = ts ? this._computeCurrentFocus(ts, freshPlayerRef) : null
+      // 同步到 globalData 供训练页使用
+      if (currentFocus) app.globalData.currentFocus = currentFocus
+      var ntrpGrowth = freshPlayerRef ? this._computeNTRPGrowth(overallScore, freshPlayerRef) : null
 
       var swingTotal = swingStats.fhTotal + swingStats.bhTotal + swingStats.svTotal + swingStats.vlTotal
 
@@ -732,9 +807,25 @@ Page({
         recentGames: recentGames, heatmapWeeks: heatmapWeeks,
         weeklyDays: weeklyDays, weeklyCount: weeklyCount, loading: false,
         swingStats: swingStats, swingChartData: swingChartData,
-        swingTotal: swingTotal, insightLine1: insightLine1, insightLine2: insightLine2,
+        swingTotal: swingTotal,
+        overallScore: overallScore,
+        scoreChange: growthResult.scoreChange,
+        ntrpProgress: ntrpGrowth ? ntrpGrowth.progress : 0,
+        ntrpProgressDisplay: ntrpGrowth ? ntrpGrowth.progress + '%' : '--',
+        ntrpLevelLabel: ntrpGrowth ? ntrpGrowth.levelLabel : '',
+        nextNTRP: ntrpGrowth ? ntrpGrowth.nextNTRP : '',
+        suggestUpgrade: ntrpGrowth ? ntrpGrowth.suggestUpgrade : false,
+        remainToUpgrade: ntrpGrowth ? ntrpGrowth.remainToUpgrade : 0,
+        growthPoints: growthResult.points,
+        growthMilestones: growthResult.milestones,
+        growthViewStart: growthResult.defaultViewStart,
+        growthHasData: growthResult.hasData,
+        growthSnapshotCount: scoreSnapshots.length,
+        currentFocus: currentFocus,
         todaySessionInfo: todaySessionInfo,
       })
+      if (growthResult.points.length) this._drawGrowthChartWithRetry(growthResult.points, growthResult.milestones, growthResult.defaultViewStart, 0)
+      if (currentFocus) this._drawFocusArcWithRetry(currentFocus.pct, 0)
       if (swingStats.sessions > 0) this._drawSwingChartWithRetry(swingChartData, 0)
       this._loadSwingChart()
       // 写入 globalData 供动态页使用
@@ -776,7 +867,7 @@ Page({
     return { title: title, sub: sub, badge: badge, difficulty: lm.label, duration: lm.duration, calories: Math.round(lm.duration * 8) }
   },
 
-  goSquare: function() { wx.navigateTo({ url: '/pages/square/square' }) },
+  goSquare: function() { wx.navigateTo({ url: '/pages/post/post' }) },
 
   _computeTechScores: function(player) {
     if (player.techScores && player.techScores.forehand) return player.techScores
@@ -809,26 +900,485 @@ Page({
     return s
   },
 
-  _drawRadarWithRetry: function(scores, attempt) {
+  _computeStreak: function(allRaw) {
+    if (!allRaw || !allRaw.length) return 0
+    var ONE_DAY = 86400000
+    var today = new Date(); today.setHours(0, 0, 0, 0)
+    var days = {}
+    allRaw.forEach(function(s) {
+      if (!s.date) return
+      var d = new Date(s.date); d.setHours(0, 0, 0, 0)
+      days[d.getTime()] = true
+    })
+    var cur = today.getTime()
+    if (!days[cur] && !days[cur - ONE_DAY]) return 0
+    var streak = 0
+    while (days[cur]) { streak++; cur -= ONE_DAY }
+    return streak
+  },
+
+  _computeWeightedScore: function(ts, allRaw, swingStats, player) {
+    // 技术能力 50%
+    var techAvg = (ts.forehand + ts.backhand + ts.serve + ts.footwork + ts.volley) / 5
+
+    // 训练活跃度 25%：近 30 天训练次数，满 20 次得满分
+    var thirtyAgo = Date.now() - 30 * 86400000
+    var recent = allRaw.filter(function(s) { return s.date && new Date(s.date).getTime() > thirtyAgo }).length
+    var trainingScore = Math.min(100, recent * 5)
+
+    // 挥拍活跃度 15%：累计挥拍，满 5000 次得满分
+    var swings = swingStats ? (swingStats.fhTotal + swingStats.bhTotal + swingStats.svTotal + swingStats.vlTotal) : 0
+    var swingScore = Math.min(100, swings / 50)
+
+    // 连续训练 10%：streak 天数，满 10 天得满分
+    var streak = this._computeStreak(allRaw)
+    var streakScore = Math.min(100, streak * 10)
+
+    var score = Math.round(techAvg * 0.50 + trainingScore * 0.25 + swingScore * 0.15 + streakScore * 0.10)
+    return Math.max(10, Math.min(99, score))
+  },
+
+  _computeCurrentFocus: function(ts, player) {
+    var SKILL_INFO = {
+      forehand: { name: '正手击球稳定性', description: '你的正手击球一致性有待提高，建议加强正手击球的随挥动作和跟步练习', gain: 4 },
+      backhand: { name: '反手击球稳定性', description: '你的反手击球一致性有待提高，建议加强反手击球的站位和随挥训练', gain: 4 },
+      serve:    { name: '发球稳定性',     description: '你的发球控制有提升空间，建议专项练习抛球点的稳定性和击球节奏', gain: 5 },
+      footwork: { name: '步伐敏捷性',     description: '你的场上移动效率有待加强，建议进行横移步伐和快速定位专项训练', gain: 3 },
+      volley:   { name: '网前截击',       description: '你的网前截击成功率有提升空间，建议加强截击时的手腕控制和站位', gain: 4 },
+    }
+    var strengthMap = { '正手':'forehand','反手':'backhand','发球':'serve','截击':'volley','步伐':'footwork' }
+    var strengthKeys = (player.strengths || []).map(function(s) { return strengthMap[s] }).filter(Boolean)
+
+    var keys = ['forehand', 'backhand', 'serve', 'footwork', 'volley']
+    var sorted = keys.map(function(k) { return { key: k, val: ts[k] || 0 } })
+      .sort(function(a, b) { return a.val - b.val })
+
+    var focus = null
+    for (var i = 0; i < sorted.length; i++) {
+      if (strengthKeys.indexOf(sorted[i].key) === -1) { focus = sorted[i]; break }
+    }
+    if (!focus) focus = sorted[0]
+
+    var info = SKILL_INFO[focus.key]
+    return {
+      skillKey: focus.key,
+      skillName: info.name,
+      pct: Math.round(focus.val),
+      description: info.description,
+      estimatedGain: Math.max(2, Math.round((100 - focus.val) * 0.06) + info.gain),
+    }
+  },
+
+  // ── NTRP 等级内成长进度计算 ──
+  _computeNTRPGrowth: function(overallScore, player) {
+    var ntrpLevel = player.ntrpLevel || '2.5'
+    var range = _NTRP_SCORE_RANGE[ntrpLevel] || { min: 32, max: 45 }
+    var idx = _NTRP_ORDER.indexOf(ntrpLevel)
+    var nextNTRP = idx >= 0 && idx < _NTRP_ORDER.length - 1 ? _NTRP_ORDER[idx + 1] : null
+    var nextLabel = nextNTRP ? (_LEVEL_META[nextNTRP] || {}).label || nextNTRP : ''
+
+    // 计算当前等级内的进度 (0-100)
+    var span = range.max - range.min
+    var progress = Math.min(100, Math.max(0, Math.round((overallScore - range.min) / span * 100)))
+
+    // 溢出处理：分数超出当前等级上限时，提示建议升级
+    var suggestUpgrade = overallScore >= range.max
+    if (suggestUpgrade) progress = 100
+
+    var remain = suggestUpgrade ? 0 : (100 - progress)
+
+    return {
+      ntrpLevel: ntrpLevel,
+      levelLabel: (_LEVEL_META[ntrpLevel] || {}).label || ntrpLevel,
+      progress: progress,
+      nextNTRP: nextNTRP || '',
+      nextLabel: nextLabel,
+      suggestUpgrade: suggestUpgrade,
+      remainToUpgrade: remain,
+    }
+  },
+
+  _computeGrowthData: function(allRaw, overallScore, player, scoreSnapshots, scoreMilestones) {
+    var snapshots = scoreSnapshots || []
+    var rawMilestones = scoreMilestones || []
+
+    // 少于 3 个快照 → 显示引导
+    if (snapshots.length < 3) {
+      return { points: [], milestones: [], defaultViewStart: 0, hasData: false, scoreChange: 0 }
+    }
+
+    // 真实快照 → chart points
+    var points = snapshots.map(function(s, i) {
+      var d = new Date(s.date)
+      return {
+        w: i,
+        score: s.overallScore,
+        label: (d.getMonth() + 1) + '/' + d.getDate(),
+        showLabel: true,
+      }
+    })
+
+    var scoreChange = snapshots.length >= 2
+      ? snapshots[snapshots.length - 1].overallScore - snapshots[0].overallScore
+      : 0
+
+    // 真实里程碑 → chart 格式
+    var milestones = rawMilestones.map(function(m) {
+      var snapIdx = points.length - 1
+      for (var i = 0; i < snapshots.length; i++) {
+        if (snapshots[i].date >= m.date.slice(0, 10)) { snapIdx = i; break }
+      }
+      return {
+        w: snapIdx,
+        label: m.label,
+        detail: m.detail || '',
+        dateStr: m.date ? m.date.slice(5) : '',
+        scoreBefore: snapIdx > 0 ? snapshots[snapIdx - 1].overallScore : snapshots[snapIdx].overallScore,
+        scoreAfter: snapshots[snapIdx].overallScore,
+      }
+    })
+
+    var VISIBLE = 8
+    var defaultViewStart = Math.max(0, points.length - VISIBLE)
+
+    return {
+      points: points,
+      scoreChange: scoreChange,
+      milestones: milestones,
+      defaultViewStart: defaultViewStart,
+      hasData: true,
+    }
+  },
+
+  _drawGrowthChartWithRetry: function(points, milestones, viewStart, attempt) {
     var self = this
     var delays = [300, 700, 1500]
     if (attempt >= delays.length) return
     setTimeout(function() {
-      var query = wx.createSelectorQuery().in(self)
-      query.select('#radar').fields({ node: true, size: true }).exec(function(res) {
-        if (res && res[0] && res[0].node) {
-          self.drawRadarChart(res[0].node, res[0].width, res[0].height, scores)
-          wx.canvasToTempFilePath({
-            canvas: res[0].node,
-            success: function(r) { self.setData({ radarImgSrc: r.tempFilePath }) },
-            fail: function() {}
-          })
+      wx.createSelectorQuery().in(self).select('#growthChart').fields({ node: true, size: true, rect: true }).exec(function(res) {
+        if (res && res[0] && res[0].node && res[0].width > 0) {
+          if (res[0].top !== undefined) self._growthCanvasRect = { top: res[0].top, left: res[0].left || 0 }
+          self.drawGrowthChart(res[0].node, res[0].width, res[0].height, points, milestones, viewStart)
         } else {
-          self._drawRadarWithRetry(scores, attempt + 1)
+          self._drawGrowthChartWithRetry(points, milestones, viewStart, attempt + 1)
         }
       })
     }, delays[attempt])
   },
+
+  _drawGrowthChartNow: function(points, milestones, viewStart) {
+    var self = this
+    wx.createSelectorQuery().in(self).select('#growthChart').fields({ node: true, size: true, rect: true }).exec(function(res) {
+      if (res && res[0] && res[0].node && res[0].width > 0) {
+        if (res[0].top !== undefined) self._growthCanvasRect = { top: res[0].top, left: res[0].left || 0 }
+        self.drawGrowthChart(res[0].node, res[0].width, res[0].height, points, milestones, viewStart)
+      }
+    })
+  },
+
+  onGrowthTouchStart: function(e) {
+    this._growthTouchStartX = e.touches[0].clientX
+    this._growthTouchStartY = e.touches[0].clientY
+    this._growthViewStartBase = this.data.growthViewStart
+    this._growthCurrentViewStart = this.data.growthViewStart
+  },
+
+  onGrowthTouchMove: function(e) {
+    var dx = e.touches[0].clientX - this._growthTouchStartX
+    var chartW = this._growthCanvasW || 260
+    var pixPerPt = chartW / 7  // VISIBLE=8，7 个间距
+    var shift = Math.round(-dx / pixPerPt)
+    var maxStart = Math.max(0, (this.data.growthPoints.length || 0) - 8)
+    var newStart = Math.max(0, Math.min(maxStart, (this._growthViewStartBase || 0) + shift))
+    if (newStart !== this._growthCurrentViewStart) {
+      this._growthCurrentViewStart = newStart
+      this._drawGrowthChartNow(this.data.growthPoints, this.data.growthMilestones, newStart)
+    }
+  },
+
+  onGrowthTouchEnd: function(e) {
+    var t = e.changedTouches[0]
+    var dx = t.clientX - (this._growthTouchStartX || t.clientX)
+    var dy = t.clientY - (this._growthTouchStartY || t.clientY)
+    var moved = Math.sqrt(dx * dx + dy * dy)
+
+    var vs = this._growthCurrentViewStart
+    if (vs !== undefined && vs !== this.data.growthViewStart) {
+      this.setData({ growthViewStart: vs })
+    }
+
+    // 轻点（移动 < 8px）触发里程碑弹窗
+    if (moved < 8) {
+      this._handleGrowthTap(t.clientX, t.clientY)
+    }
+  },
+
+  _handleGrowthTap: function(clientX, clientY) {
+    var rect = this._growthCanvasRect
+    var hitAreas = this._growthMilestoneHitAreas
+    if (!rect || !hitAreas || !hitAreas.length) return
+    var cx = clientX - rect.left
+    var cy = clientY - rect.top
+    var hit = null
+    hitAreas.forEach(function(h) {
+      var d = Math.sqrt((cx - h.x) * (cx - h.x) + (cy - h.y) * (cy - h.y))
+      if (d <= h.radius) hit = h
+    })
+    if (hit) {
+      this.setData({
+        growthEventPopup: {
+          label: hit.label,
+          dateStr: hit.dateStr,
+          detail: hit.detail,
+          scoreBefore: hit.scoreBefore,
+          scoreAfter: hit.scoreAfter,
+        }
+      })
+    }
+  },
+
+  closeGrowthEventPopup: function() {
+    this.setData({ growthEventPopup: null })
+  },
+
+  goSkillFocus: function() {
+    var app = getApp()
+    if (!app.requireAuth()) return
+    wx.navigateTo({ url: '/pages/training/training' })
+  },
+
+  _drawFocusArcWithRetry: function(pct, attempt) {
+    var self = this
+    var delays = [300, 700, 1500]
+    if (attempt >= delays.length) return
+    setTimeout(function() {
+      wx.createSelectorQuery().in(self).select('#focusArc').fields({ node: true, size: true }).exec(function(res) {
+        if (res && res[0] && res[0].node && res[0].width > 0) {
+          self._drawFocusArc(res[0].node, res[0].width, res[0].height, pct)
+        } else {
+          self._drawFocusArcWithRetry(pct, attempt + 1)
+        }
+      })
+    }, delays[attempt])
+  },
+
+  _drawFocusArc: function(canvas, W, H, pct) {
+    var dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
+    canvas.width = W * dpr; canvas.height = H * dpr
+    var ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+
+    var cx = W / 2, cy = H / 2, R = Math.min(W, H) / 2 - 5, lw = 6
+
+    // 背景圆弧
+    ctx.beginPath()
+    ctx.arc(cx, cy, R, 0, Math.PI * 2)
+    ctx.strokeStyle = 'rgba(255,255,255,0.08)'
+    ctx.lineWidth = lw
+    ctx.stroke()
+
+    // 进度弧（从顶部顺时针）
+    var start = -Math.PI / 2
+    var end = start + (Math.min(pct, 100) / 100) * Math.PI * 2
+    ctx.beginPath()
+    ctx.arc(cx, cy, R, start, end)
+    ctx.strokeStyle = '#B2FF33'
+    ctx.lineWidth = lw
+    ctx.lineCap = 'round'
+    ctx.stroke()
+  },
+
+  drawGrowthChart: function(canvas, W, H, allPoints, milestones, viewStart) {
+    var VISIBLE = Math.min(8, allPoints.length)
+    var totalPts = allPoints.length
+    var maxStart = Math.max(0, totalPts - VISIBLE)
+    var vs = Math.max(0, Math.min(maxStart, viewStart || 0))
+    var points = allPoints.slice(vs, vs + VISIBLE)
+    var N = points.length
+
+    if (N === 0) return
+
+    // 重映射里程碑到视口内坐标
+    var visMilestones = milestones.filter(function(m) {
+      return m.w >= vs && m.w < vs + VISIBLE
+    }).map(function(m) {
+      return { w: m.w - vs, label: m.label, dateStr: m.dateStr, detail: m.detail || '' }
+    })
+
+    // 存储 canvas 宽度供 touch 处理使用
+    this._growthCanvasW = W
+
+    var dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
+    canvas.width = W * dpr; canvas.height = H * dpr
+    var ctx = canvas.getContext('2d')
+    ctx.scale(dpr, dpr)
+
+    var padL = 10, padR = 44, padB = 26
+    var padT = visMilestones.length > 0 ? 62 : 32
+    var cW = W - padL - padR, cH = H - padT - padB
+
+    var minScore = points.reduce(function(m, p) { return Math.min(m, p.score) }, points[0].score)
+    var maxScore = points.reduce(function(m, p) { return Math.max(m, p.score) }, points[0].score)
+
+    // 纵轴自适应：根据实际数据范围确定上下界
+    var dataRange = maxScore - minScore
+    var yStep
+    if (dataRange <= 20) yStep = 5
+    else if (dataRange <= 50) yStep = 10
+    else yStep = 25
+
+    var yMin = Math.floor(minScore / yStep) * yStep
+    var yMax = Math.ceil(maxScore / yStep) * yStep + yStep  // 顶部留一个步长的余量
+    if (yMax - yMin < yStep * 2) yMax = yMin + yStep * 3   // 保证至少 3 条网格线
+
+    function xFor(i) { return padL + (i / (N - 1)) * cW }
+    function yFor(v) { return padT + cH - ((v - yMin) / (yMax - yMin)) * cH }
+
+    // Y 轴网格线 + 右侧标签
+    ctx.font = '11px PingFang SC'
+    ctx.textBaseline = 'middle'
+    ctx.textAlign = 'left'
+    for (var gv = yMin; gv <= yMax; gv += yStep) {
+      var gy = yFor(gv)
+      ctx.setLineDash([3, 5])
+      ctx.strokeStyle = 'rgba(255,255,255,0.07)'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(padL, gy); ctx.lineTo(padL + cW, gy); ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(255,255,255,0.3)'
+      ctx.fillText(String(gv), padL + cW + 8, gy)
+    }
+
+    // 数据点坐标
+    var pts = points.map(function(p, i) { return { x: xFor(i), y: yFor(p.score) } })
+
+    // Catmull-Rom 平滑曲线
+    function buildPath(p) {
+      ctx.moveTo(p[0].x, p[0].y)
+      for (var i = 0; i < p.length - 1; i++) {
+        var p0 = p[Math.max(0, i - 1)], p1 = p[i]
+        var p2 = p[i + 1], p3 = p[Math.min(p.length - 1, i + 2)]
+        ctx.bezierCurveTo(
+          p1.x + (p2.x - p0.x) / 6, p1.y + (p2.y - p0.y) / 6,
+          p2.x - (p3.x - p1.x) / 6, p2.y - (p3.y - p1.y) / 6,
+          p2.x, p2.y
+        )
+      }
+    }
+
+    // 渐变填充
+    var baseY = padT + cH
+    var grad = ctx.createLinearGradient(0, padT, 0, baseY)
+    grad.addColorStop(0, 'rgba(178,255,51,0.35)')
+    grad.addColorStop(1, 'rgba(178,255,51,0)')
+    ctx.beginPath(); buildPath(pts)
+    ctx.lineTo(pts[N - 1].x, baseY); ctx.lineTo(pts[0].x, baseY); ctx.closePath()
+    ctx.fillStyle = grad; ctx.fill()
+
+    // 折线
+    ctx.beginPath(); buildPath(pts)
+    ctx.strokeStyle = '#B2FF33'; ctx.lineWidth = 2.5
+    ctx.lineJoin = 'round'; ctx.lineCap = 'round'; ctx.stroke()
+
+    // 中间小圆点
+    ctx.fillStyle = '#B2FF33'
+    pts.forEach(function(pt, i) {
+      if (i === 0 || i === N - 1) return
+      ctx.beginPath(); ctx.arc(pt.x, pt.y, 3, 0, Math.PI * 2); ctx.fill()
+    })
+
+    // 末尾徽章（只当视口末尾是全部数据最后一点时才显示"今天"徽章）
+    var showBadge = (vs + VISIBLE >= totalPts)
+    var lp = pts[N - 1], ls = points[N - 1].score
+    if (showBadge) {
+      var bsz = 36, br = 8
+      var bx = lp.x - bsz / 2
+      var by = lp.y - bsz - 5
+      if (bx + bsz > W - padR) bx = W - padR - bsz
+      ctx.fillStyle = '#B2FF33'
+      ctx.beginPath()
+      ctx.moveTo(bx + br, by); ctx.lineTo(bx + bsz - br, by)
+      ctx.arcTo(bx + bsz, by, bx + bsz, by + br, br)
+      ctx.lineTo(bx + bsz, by + bsz - br)
+      ctx.arcTo(bx + bsz, by + bsz, bx + bsz - br, by + bsz, br)
+      ctx.lineTo(bx + br, by + bsz)
+      ctx.arcTo(bx, by + bsz, bx, by + bsz - br, br)
+      ctx.lineTo(bx, by + br)
+      ctx.arcTo(bx, by, bx + br, by, br)
+      ctx.closePath(); ctx.fill()
+      ctx.beginPath(); ctx.arc(lp.x, lp.y, 5, 0, Math.PI * 2); ctx.fill()
+      ctx.fillStyle = '#0E1C14'
+      ctx.font = 'bold 14px PingFang SC'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
+      ctx.fillText(String(ls), lp.x, by + bsz / 2)
+    } else {
+      // 非末尾：末尾点画大圆点
+      ctx.fillStyle = '#B2FF33'
+      ctx.beginPath(); ctx.arc(lp.x, lp.y, 5, 0, Math.PI * 2); ctx.fill()
+    }
+
+    // 里程碑标注（视口内）
+    visMilestones.forEach(function(m) {
+      if (m.w < 0 || m.w >= N) return
+      var pt = pts[m.w]
+      var mw = 84, mh = 40, mr = 8
+      var mx = pt.x - mw / 2
+      if (mx < padL) mx = padL
+      if (mx + mw > padL + cW) mx = padL + cW - mw
+      var my = padT - mh - 4
+      ctx.setLineDash([3, 3])
+      ctx.strokeStyle = 'rgba(178,255,51,0.35)'; ctx.lineWidth = 1
+      ctx.beginPath(); ctx.moveTo(pt.x, pt.y - 6); ctx.lineTo(pt.x, my + mh); ctx.stroke()
+      ctx.setLineDash([])
+      ctx.fillStyle = 'rgba(20,38,28,0.96)'; ctx.strokeStyle = 'rgba(178,255,51,0.3)'; ctx.lineWidth = 1
+      ctx.beginPath()
+      ctx.moveTo(mx + mr, my); ctx.lineTo(mx + mw - mr, my)
+      ctx.arcTo(mx + mw, my, mx + mw, my + mr, mr)
+      ctx.lineTo(mx + mw, my + mh - mr); ctx.arcTo(mx + mw, my + mh, mx + mw - mr, my + mh, mr)
+      ctx.lineTo(mx + mr, my + mh); ctx.arcTo(mx, my + mh, mx, my + mh - mr, mr)
+      ctx.lineTo(mx, my + mr); ctx.arcTo(mx, my, mx + mr, my, mr)
+      ctx.closePath(); ctx.fill(); ctx.stroke()
+      ctx.fillStyle = 'rgba(178,255,51,0.85)'; ctx.font = '10px PingFang SC'
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+      ctx.fillText(m.dateStr, mx + mw / 2, my + 6)
+      ctx.fillStyle = 'rgba(255,255,255,0.82)'
+      ctx.fillText(m.label, mx + mw / 2, my + 22)
+    })
+
+    // 存储里程碑点击区域（canvas CSS px 坐标）
+    this._growthMilestoneHitAreas = visMilestones.map(function(m) {
+      var pt = pts[m.w]
+      return {
+        x: pt.x, y: pt.y, radius: 22,
+        label: m.label, dateStr: m.dateStr, detail: m.detail,
+        scoreBefore: points[Math.max(0, m.w - 1)].score,
+        scoreAfter: points[m.w].score,
+      }
+    })
+
+    // X 轴日期标签（每隔 1 个显示）
+    ctx.fillStyle = 'rgba(255,255,255,0.38)'; ctx.font = '10px PingFang SC'
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top'
+    points.forEach(function(p, i) {
+      if (i % 2 === 0 || i === N - 1) ctx.fillText(p.label, xFor(i), padT + cH + 6)
+    })
+
+    // 左右拖动渐变指示器
+    if (vs > 0) {
+      var lgL = ctx.createLinearGradient(padL, 0, padL + 28, 0)
+      lgL.addColorStop(0, 'rgba(26,40,32,0.88)')
+      lgL.addColorStop(1, 'rgba(26,40,32,0)')
+      ctx.fillStyle = lgL
+      ctx.fillRect(padL, padT, 28, cH)
+    }
+    if (vs < maxStart) {
+      var lgR = ctx.createLinearGradient(padL + cW - 28, 0, padL + cW, 0)
+      lgR.addColorStop(0, 'rgba(26,40,32,0)')
+      lgR.addColorStop(1, 'rgba(26,40,32,0.88)')
+      ctx.fillStyle = lgR
+      ctx.fillRect(padL + cW - 28, padT, 28, cH)
+    }
+  },
+
 
   _loadSwingChart: function() {
     var self = this
@@ -848,7 +1398,7 @@ Page({
           app.globalData.player = Object.assign({}, app.globalData.player, { swingStats: fresh.swingStats, swingHistory: fresh.swingHistory })
           p = app.globalData.player
         }
-      } catch(e) { return }
+      } catch(e) { console.error('[profile] drawSwingChartFromCache getPlayer failed:', e); return }
     }
     var rawStats = p.swingStats || {}
     if (rawStats.sessions > 0) {
@@ -1014,71 +1564,6 @@ Page({
     }
   },
 
-  drawRadarChart: function(canvas, W, H, scores) {
-      var dpr = wx.getWindowInfo ? wx.getWindowInfo().pixelRatio : 2
-      canvas.width = W * dpr; canvas.height = H * dpr
-      var ctx = canvas.getContext('2d')
-      ctx.scale(dpr, dpr)
-
-      var cx = W / 2, cy = H / 2 + 6, R = Math.min(W, H) * 0.30
-      var labels = ['正手', '反手', '发球', '步伐', '截击']
-      var keys   = ['forehand', 'backhand', 'serve', 'footwork', 'volley']
-      var N = 5
-      var angle = function(i) { return (i * 2 * Math.PI / N) - Math.PI / 2 }
-
-      // Grid rings
-      ctx.strokeStyle = 'rgba(178,255,51,0.15)'
-      ctx.lineWidth = 1
-      for (var ring = 1; ring <= 4; ring++) {
-        ctx.beginPath()
-        for (var i = 0; i < N; i++) {
-          var r = R * ring / 4
-          var x = cx + r * Math.cos(angle(i)), y = cy + r * Math.sin(angle(i))
-          i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-        }
-        ctx.closePath(); ctx.stroke()
-      }
-
-      // Axes
-      ctx.strokeStyle = 'rgba(178,255,51,0.2)'
-      for (var i = 0; i < N; i++) {
-        ctx.beginPath()
-        ctx.moveTo(cx, cy)
-        ctx.lineTo(cx + R * Math.cos(angle(i)), cy + R * Math.sin(angle(i)))
-        ctx.stroke()
-      }
-
-      // Data polygon
-      ctx.beginPath()
-      for (var i = 0; i < N; i++) {
-        var v = Math.max(0, Math.min(100, scores[keys[i]] || 0)) / 100
-        var x = cx + R * v * Math.cos(angle(i)), y = cy + R * v * Math.sin(angle(i))
-        i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y)
-      }
-      ctx.closePath()
-      ctx.fillStyle = 'rgba(178,255,51,0.18)'; ctx.fill()
-      ctx.strokeStyle = 'rgba(178,255,51,0.85)'; ctx.lineWidth = 2; ctx.stroke()
-
-      // Data dots
-      ctx.fillStyle = '#B2FF33'
-      for (var i = 0; i < N; i++) {
-        var v = Math.max(0, Math.min(100, scores[keys[i]] || 0)) / 100
-        var x = cx + R * v * Math.cos(angle(i)), y = cy + R * v * Math.sin(angle(i))
-        ctx.beginPath(); ctx.arc(x, y, 4, 0, 2 * Math.PI); ctx.fill()
-      }
-
-      // Labels
-      ctx.fillStyle = 'rgba(255,255,255,0.85)'
-      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'
-      ctx.font = 'bold 13px PingFang SC'
-      var pad = 28
-      for (var i = 0; i < N; i++) {
-        var a = angle(i)
-        var lx = cx + (R + pad) * Math.cos(a), ly = cy + (R + pad) * Math.sin(a)
-        ctx.fillText(labels[i], lx, ly)
-      }
-
-  },
 
   loadRecentMedia: function(games) {
     var self = this
@@ -1103,6 +1588,6 @@ Page({
         })
         self.setData({ recentGames: updated })
       })
-      .catch(function() {})
+      .catch(function(e) { console.error('[profile] loadRecentMedia failed:', e) })
   }
 })
