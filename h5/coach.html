@@ -563,15 +563,37 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
 <script>
 var COACH_API = 'https://cloud1-d0g1q4d5p6fc28083-1439672136.ap-shanghai.app.tcloudbase.com/coach'
 var LEVEL_LABEL = { beginner:'新手 2.0-2.5', intermediate:'进阶 3.0-3.5', advanced:'竞技 4.0+' }
-var STATE = { player: null, history: [], thinking: false }
+var STATE = { player: null, history: [], thinking: false, sessionToken: '', launchQuestion: '' }
 
 window.onload = function() {
-  var raw = new URLSearchParams(location.search).get('p')
-  if (!raw) { showErr('链接无效', '请在 TennisF 小程序重新获取 AI 教练链接'); return }
-  try { STATE.player = JSON.parse(decodeURIComponent(raw)) } catch(e) {
-    showErr('链接解析失败', '请在 TennisF 小程序重新获取 AI 教练链接'); return
-  }
-  bootUI()
+  var params = new URLSearchParams(location.search)
+  var launchToken = params.get('t') || ''
+  STATE.launchQuestion = ''
+  history.replaceState(null, '', location.pathname + location.hash)
+  if (!launchToken) { showErr('链接无效', '请在 TennisF 小程序重新获取教练链接'); return }
+
+  fetch(COACH_API, {
+    method: 'POST',
+    headers: { 'Content-Type':'application/json' },
+    body: JSON.stringify({ action:'bootstrap', token:launchToken })
+  })
+  .then(function(r) {
+    return r.json().then(function(data) {
+      if (!r.ok) throw new Error(data.error || 'bootstrap failed')
+      return data
+    })
+  })
+  .then(function(data) {
+    STATE.sessionToken = data.sessionToken || ''
+    STATE.player = data.player || {}
+    STATE.launchQuestion = data.launchQuestion || ''
+    if (!STATE.sessionToken) throw new Error('missing session')
+    bootUI()
+    if (STATE.launchQuestion) openChat(STATE.launchQuestion.slice(0, 500))
+  })
+  .catch(function() {
+    showErr('链接已失效', '请在 TennisF 小程序重新获取教练链接')
+  })
 }
 
 function bootUI() {
@@ -583,7 +605,8 @@ function bootUI() {
       var grid = document.getElementById('questionsGrid')
       var pill = document.createElement('div')
       pill.className = 'question-pill'
-      pill.setAttribute('onclick', 'openChat("如何改善' + p.weaknesses[0].replace(/"/g,'') + '？")')
+      var weaknessQuestion = '如何改善' + String(p.weaknesses[0]).slice(0, 40) + '？'
+      pill.addEventListener('click', function() { openChat(weaknessQuestion) })
       pill.innerHTML = '<span>如何改善' + esc(p.weaknesses[0]) + '？</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
       grid.insertBefore(pill, grid.firstChild)
       if (grid.children.length > 4) grid.removeChild(grid.lastChild)
@@ -657,38 +680,31 @@ function addTyping() {
 
 function removeTyping() { var el = document.getElementById('typingWrap'); if (el) el.remove() }
 
-function buildSystemPrompt(p) {
-  if (!p || !p.nickname) return '你是 TennisF 网球教练，请用中文简洁专业地回答网球问题。'
-  var levelMap = { beginner:'新手（2.0-2.5 NTRP）', intermediate:'进阶（3.0-3.5 NTRP）', advanced:'竞技（4.0+ NTRP）' }
-  return '你是 TennisF 网球成长教练，正在为以下球员提供一对一指导：\n\n' +
-    '球员档案\n' +
-    '- 昵称：' + p.nickname + '\n' +
-    '- 水平：' + (levelMap[p.level] || p.ntrpLevel || '未知') + '\n' +
-    '- 风格：' + (p.playStyle || '未填写') + '\n' +
-    '- 强项：' + ((p.strengths || []).join('、') || '未填写') + '\n' +
-    '- 需提升：' + ((p.weaknesses || []).join('、') || '未填写') + '\n' +
-    '- 目标：' + ((p.goals || []).join('、') || '未填写') + '\n' +
-    '- 伤病：' + ((p.injuries || []).join('、') || '无') + '\n\n' +
-    '请根据该球员档案给出针对性建议，语言简洁，多用具体动作描述，回答控制在 200 字以内（除非用户要求详细）。'
-}
-
 function doSend(text) {
+  text = String(text || '').trim().slice(0, 500)
+  if (!text || !STATE.sessionToken) return
   STATE.thinking = true
   addMsg('user', text)
   addTyping()
-  var messages = [{ role:'system', content:buildSystemPrompt(STATE.player) }]
   var hist = STATE.history.slice(-8)
-  for (var i = 0; i < hist.length; i++) messages.push(hist[i])
-  messages.push({ role:'user', content:text })
   var controller = new AbortController()
   var timer = setTimeout(function() { controller.abort() }, 30000)
   fetch(COACH_API, {
     method: 'POST',
-    headers: { 'Content-Type':'application/json' },
-    body: JSON.stringify({ messages:messages }),
+    headers: {
+      'Content-Type':'application/json',
+      'Authorization':'Bearer ' + STATE.sessionToken
+    },
+    body: JSON.stringify({ action:'chat', question:text, history:hist }),
     signal: controller.signal
   })
-  .then(function(r) { clearTimeout(timer); return r.json() })
+  .then(function(r) {
+    clearTimeout(timer)
+    return r.json().then(function(data) {
+      if (!r.ok) throw new Error(data.error || 'request failed')
+      return data
+    })
+  })
   .then(function(data) {
     removeTyping(); STATE.thinking = false
     var reply = data.reply
