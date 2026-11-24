@@ -208,6 +208,7 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
 .lcard-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 100%); }
 .lcard-badge { position: absolute; top: 8px; right: 8px; z-index: 1; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0,0,0,0.5); color: var(--green); }
 .lcard-play { position: absolute; bottom: 8px; left: 10px; z-index: 1; font-size: 11px; color: #fff; }
+.lcard-reason { font-size: 10px; font-weight: 700; color: var(--green); margin-bottom: 3px; }
 .lcard-body { padding: 9px 10px 11px; }
 .lcard-title { font-size: 13px; font-weight: 700; line-height: 1.35; margin-bottom: 4px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .lcard-coach { font-size: 10px; color: var(--green); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
@@ -405,16 +406,16 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
       </div>
     </div>
 
-    <!-- 教学视频（与 AI 教练同页，非独立网页） -->
+    <!-- 推荐（基于球员档案个性化排序的教学视频） -->
     <div class="section-wrap">
       <div class="section-hd">
-        <span class="section-hd-left">🎬 教学视频</span>
+        <span class="section-hd-left">推荐</span>
         <span class="section-hd-right" onclick="openLessonsView()">查看全部
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </span>
       </div>
       <div class="lesson-strip" id="lessonStrip"></div>
-      <div class="lesson-note">B 站公开免费教学 · 官方播放器内嵌 · 版权归各 UP 主所有</div>
+      <div class="lesson-note" id="lessonNote">B 站公开免费教学 · 官方播放器内嵌 · 版权归各 UP 主所有</div>
     </div>
 
     <!-- 你可能想问 -->
@@ -623,17 +624,76 @@ function renderVList() {
   });
 }
 
+/* ── 基于球员档案的个性化推荐 ── */
+var CAT_KEYWORDS = [
+  { cat: 'forehand', words: ['正手', 'forehand'] },
+  { cat: 'backhand', words: ['反手', 'backhand'] },
+  { cat: 'serve',    words: ['发球', 'serve'] },
+  { cat: 'volley',   words: ['截击', '网前', 'volley'] },
+  { cat: 'footwork', words: ['步伐', '步法', '脚步', '移动', 'footwork'] },
+  { cat: 'fitness',  words: ['体能', '体力', '热身', '耐力', 'fitness'] },
+  { cat: 'tactics',  words: ['战术', '比赛策略', '策略', 'tactics'] }
+];
+var LEVEL_ORDER = {
+  beginner:     ['forehand', 'serve', 'footwork', 'backhand', 'fitness', 'volley'],
+  intermediate: ['backhand', 'serve', 'footwork', 'forehand', 'volley', 'fitness'],
+  advanced:     ['volley', 'tactics', 'forehand', 'footwork', 'backhand', 'fitness']
+};
+function matchCats(text) {
+  if (!text) return [];
+  var s = String(text).toLowerCase(), out = [];
+  CAT_KEYWORDS.forEach(function(m) {
+    for (var i = 0; i < m.words.length; i++) {
+      if (s.indexOf(m.words[i]) >= 0) { out.push(m.cat); break; }
+    }
+  });
+  return out;
+}
+function recommendVideos(p) {
+  var recs = VIDEOS.map(function(v) {
+    var score = 0, reason = '';
+    if (p) {
+      var wArr = Array.isArray(p.weaknesses) ? p.weaknesses : [];
+      var gArr = Array.isArray(p.goals) ? p.goals : [];
+      for (var wi = 0; wi < wArr.length && wi < 3; wi++) {
+        if (matchCats(wArr[wi]).indexOf(v.cat) >= 0) {
+          score += 8 - wi * 2;
+          if (!reason) reason = '针对你的短板：' + String(wArr[wi]).slice(0, 14);
+        }
+      }
+      for (var gi = 0; gi < gArr.length && gi < 3; gi++) {
+        if (matchCats(gArr[gi]).indexOf(v.cat) >= 0) {
+          score += 4 - gi;
+          if (!reason) reason = '助力你的目标：' + String(gArr[gi]).slice(0, 14);
+        }
+      }
+      var order = LEVEL_ORDER[p.level] || LEVEL_ORDER.intermediate;
+      var oi = order.indexOf(v.cat);
+      if (oi >= 0) {
+        score += order.length - oi;
+        if (!reason) reason = '适合' + (LEVEL_LABEL[p.level] ? LEVEL_LABEL[p.level].split(' ')[0] : '你的阶段');
+      }
+    }
+    return { v: v, score: score, reason: reason };
+  });
+  recs.sort(function(a, b) { return b.score - a.score; });
+  return recs.slice(0, 6);
+}
+
 function renderLessonStrip() {
   var el = document.getElementById('lessonStrip');
   if (!el) return;
   var html = '';
-  VIDEOS.slice(0, 6).forEach(function(v) {
+  recommendVideos(STATE.player).forEach(function(r) {
+    var v = r.v;
     html += '<div class="lcard" data-vid="' + v.id + '">' +
       '<div class="lcard-img" style="background:' + v.grad + '">' + v.icon +
         '<span class="lcard-badge">' + catName(v.cat) + '</span>' +
         '<span class="lcard-play">▶ 点击播放</span></div>' +
-      '<div class="lcard-body"><div class="lcard-title">' + v.title + '</div>' +
-      '<div class="lcard-coach">' + v.coach + '</div></div>' +
+      '<div class="lcard-body">' +
+        (r.reason ? '<div class="lcard-reason">' + esc(r.reason) + '</div>' : '') +
+        '<div class="lcard-title">' + v.title + '</div>' +
+        '<div class="lcard-coach">' + v.coach + '</div></div>' +
     '</div>';
   });
   el.innerHTML = html;
@@ -765,6 +825,15 @@ function fillHome() {
       pill.innerHTML = '<span>如何改善' + esc(p.weaknesses[0]) + '？</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
       grid.insertBefore(pill, grid.firstChild)
       if (grid.children.length > 4) grid.removeChild(grid.lastChild)
+    }
+    // 「推荐」板块按球员档案重新排序（短板 > 目标 > 级别）
+    renderLessonStrip()
+    var note = document.getElementById('lessonNote')
+    if (note) {
+      var bits = []
+      if (p.level && LEVEL_LABEL[p.level]) bits.push(LEVEL_LABEL[p.level])
+      if (p.weaknesses && p.weaknesses.length) bits.push('短板：' + String(p.weaknesses[0]).slice(0, 16))
+      note.textContent = (bits.length ? '已按「' + bits.join(' · ') + '」为你排序 · ' : '') + 'B 站公开免费教学 · 版权归各 UP 主所有'
     }
   }
 }
