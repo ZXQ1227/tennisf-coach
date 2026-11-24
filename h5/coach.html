@@ -428,19 +428,19 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
       </div>
       <div class="questions-grid" id="questionsGrid">
         <div class="question-pill" onclick="openChat('我的正手为什么总是出界？')">
-          <span>我的正手为什么总是出界？</span>
+          <span>正手总出界？</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </div>
         <div class="question-pill" onclick="openChat('如何提升发球速度？')">
-          <span>如何提升发球速度？</span>
+          <span>怎么提升发球？</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </div>
         <div class="question-pill" onclick="openChat('怎样增强比赛体能？')">
-          <span>怎样增强比赛体能？</span>
+          <span>怎么增强体能？</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </div>
         <div class="question-pill" onclick="openChat('反手击球总是没力量怎么办？')">
-          <span>反手击球总是没力量怎么办？</span>
+          <span>反手没力量？</span>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
         </div>
       </div>
@@ -821,8 +821,10 @@ function fillHome() {
       var pill = document.createElement('div')
       pill.className = 'question-pill'
       var weaknessQuestion = '如何改善' + String(p.weaknesses[0]).slice(0, 40) + '？'
+      // 展示文字限 10 字内（短板原文截 9 字），发送给 AI 的仍是完整问题
+      var weaknessLabel = String(p.weaknesses[0]).replace(/[？?。！!]+$/, '').slice(0, 9) + '？'
       pill.addEventListener('click', function() { openChat(weaknessQuestion) })
-      pill.innerHTML = '<span>如何改善' + esc(p.weaknesses[0]) + '？</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
+      pill.innerHTML = '<span>' + esc(weaknessLabel) + '</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>'
       grid.insertBefore(pill, grid.firstChild)
       if (grid.children.length > 4) grid.removeChild(grid.lastChild)
     }
