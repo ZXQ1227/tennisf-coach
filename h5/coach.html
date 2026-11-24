@@ -107,70 +107,8 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
 .ability-name { font-size: 12px; font-weight: 600; margin-bottom: 3px; }
 .ability-desc { font-size: 10px; color: var(--text-dim); line-height: 1.4; }
 
-/* ── RECENT ANALYSIS ── */
+/* ── 通用板块容器 ── */
 .section-wrap { margin: 0 14px 14px; }
-.analysis-card {
-  background: var(--card); border: 1px solid var(--card-border);
-  border-radius: var(--radius); padding: 12px;
-  display: flex; align-items: center; gap: 12px; cursor: pointer;
-}
-.analysis-thumb {
-  width: 80px; height: 60px; border-radius: 10px; flex-shrink: 0; overflow: hidden;
-  background: #1A2A1A; display: flex; align-items: center; justify-content: center; position: relative;
-}
-.analysis-thumb-img { width: 100%; height: 100%; object-fit: cover; display: none; }
-.analysis-thumb-bg {
-  position: absolute; inset: 0;
-  background: linear-gradient(135deg, #1C3020 0%, #0E1C12 100%);
-}
-.play-icon {
-  position: relative; z-index: 1;
-  width: 26px; height: 26px; border-radius: 50%;
-  background: rgba(255,255,255,0.85);
-  display: flex; align-items: center; justify-content: center;
-}
-.play-icon::after { content: ''; width: 0; height: 0; border-top: 7px solid transparent; border-bottom: 7px solid transparent; border-left: 11px solid #0A0C0B; margin-left: 2px; }
-.analysis-body { flex: 1; min-width: 0; }
-.analysis-title { font-size: 15px; font-weight: 700; margin-bottom: 3px; }
-.analysis-time { font-size: 11px; color: var(--text-faint); margin-bottom: 5px; }
-.analysis-desc { font-size: 12px; color: var(--text-dim); line-height: 1.5; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
-.analysis-score { flex-shrink: 0; text-align: center; padding-left: 8px; }
-.analysis-score-num { font-size: 32px; font-weight: 800; color: var(--green); line-height: 1; }
-.analysis-score-label { font-size: 11px; color: var(--text-dim); margin-top: 3px; }
-.analysis-arrow { flex-shrink: 0; color: var(--text-faint); }
-.analysis-arrow svg { width: 16px; height: 16px; }
-
-/* ── RECOMMENDATIONS ── */
-.recommend-scroll { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-.recommend-scroll::-webkit-scrollbar { display: none; }
-.recommend-card {
-  flex-shrink: 0; width: 160px; border-radius: var(--radius); overflow: hidden;
-  background: var(--card); border: 1px solid var(--card-border); cursor: pointer;
-}
-.recommend-img {
-  width: 100%; height: 100px; position: relative; overflow: hidden;
-}
-.recommend-img-bg {
-  position: absolute; inset: 0;
-}
-.recommend-img-bg.g1 { background: linear-gradient(145deg, #1E3A28 0%, #0D1A10 100%); }
-.recommend-img-bg.g2 { background: linear-gradient(145deg, #1A2E3A 0%, #0D1218 100%); }
-.recommend-img-bg.g3 { background: linear-gradient(145deg, #2A2A1A 0%, #141408 100%); }
-.recommend-overlay {
-  position: absolute; inset: 0;
-  background: linear-gradient(to bottom, transparent 30%, rgba(0,0,0,0.7) 100%);
-}
-.recommend-img-label {
-  position: absolute; bottom: 8px; left: 10px; right: 10px;
-}
-.recommend-title { font-size: 13px; font-weight: 700; margin-bottom: 2px; }
-.recommend-sub { font-size: 11px; color: rgba(255,255,255,0.75); }
-.recommend-meta { padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; }
-.level-tag {
-  font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 4px;
-  background: var(--green-dim); color: var(--green); border: 1px solid var(--green-border);
-}
-.recommend-duration { font-size: 11px; color: var(--text-dim); }
 
 /* ── QUESTIONS ── */
 .questions-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
@@ -463,88 +401,6 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
           </div>
           <div class="ability-name">实时问答</div>
           <div class="ability-desc">7×24小时在线<br>解答你的问题</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 最近分析 -->
-    <div class="section-wrap">
-      <div class="section-hd">
-        <span class="section-hd-left">最近分析</span>
-        <span class="section-hd-right">查看全部
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </span>
-      </div>
-      <div class="analysis-card" onclick="openChat('帮我详细分析一下昨天的正手击球训练')">
-        <div class="analysis-thumb">
-          <div class="analysis-thumb-bg"></div>
-          <div class="play-icon"></div>
-        </div>
-        <div class="analysis-body">
-          <div class="analysis-title">正手击球分析</div>
-          <div class="analysis-time">昨天</div>
-          <div class="analysis-desc">你的正手击球稳定性不错，但击球准备时间较长，建议…</div>
-        </div>
-        <div class="analysis-score">
-          <div class="analysis-score-num">78</div>
-          <div class="analysis-score-label">综合评分</div>
-        </div>
-        <div class="analysis-arrow">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
-        </div>
-      </div>
-    </div>
-
-    <!-- 为你推荐 -->
-    <div class="section-wrap">
-      <div class="section-hd">
-        <span class="section-hd-left">为你推荐</span>
-        <span class="section-hd-right green" onclick="refreshRecommend()">换一批
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>
-        </span>
-      </div>
-      <div class="recommend-scroll" id="recommendScroll">
-        <div class="recommend-card" onclick="openChat('帮我制定一个反手稳定性训练计划')">
-          <div class="recommend-img">
-            <div class="recommend-img-bg g1"></div>
-            <div class="recommend-overlay"></div>
-            <div class="recommend-img-label">
-              <div class="recommend-title">反手稳定性训练</div>
-              <div class="recommend-sub">提升反手击球一致性</div>
-            </div>
-          </div>
-          <div class="recommend-meta">
-            <span class="level-tag">进阶</span>
-            <span class="recommend-duration">25 分钟</span>
-          </div>
-        </div>
-        <div class="recommend-card" onclick="openChat('怎样提升发球力量和旋转？')">
-          <div class="recommend-img">
-            <div class="recommend-img-bg g2"></div>
-            <div class="recommend-overlay"></div>
-            <div class="recommend-img-label">
-              <div class="recommend-title">发球力量提升计划</div>
-              <div class="recommend-sub">增强发球速度和旋转</div>
-            </div>
-          </div>
-          <div class="recommend-meta">
-            <span class="level-tag">中级</span>
-            <span class="recommend-duration">30 分钟</span>
-          </div>
-        </div>
-        <div class="recommend-card" onclick="openChat('网前截击技术有哪些训练要点？')">
-          <div class="recommend-img">
-            <div class="recommend-img-bg g3"></div>
-            <div class="recommend-overlay"></div>
-            <div class="recommend-img-label">
-              <div class="recommend-title">网前截击专项</div>
-              <div class="recommend-sub">提高网前反应与技术</div>
-            </div>
-          </div>
-          <div class="recommend-meta">
-            <span class="level-tag">进阶</span>
-            <span class="recommend-duration">20 分钟</span>
-          </div>
         </div>
       </div>
     </div>
@@ -984,12 +840,6 @@ function doSend(text) {
   })
 }
 
-function refreshRecommend() {
-  var btn = event.currentTarget
-  btn.style.transform = 'rotate(360deg)'
-  btn.style.transition = 'transform 0.4s ease'
-  setTimeout(function() { btn.style.transform = ''; btn.style.transition = '' }, 400)
-}
 
 function showErr(title, sub) {
   document.getElementById('errTitle').textContent = title
