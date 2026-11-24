@@ -257,6 +257,59 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
 .err-icon { font-size: 48px; }
 .err-title { font-size: 18px; font-weight: 700; }
 .err-sub { font-size: 14px; color: var(--text-dim); line-height: 1.6; }
+
+/* ── 教学视频（首页板块 + 子视图 + 播放器） ── */
+.lesson-strip { display: flex; gap: 10px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+.lesson-strip::-webkit-scrollbar { display: none; }
+.lcard {
+  flex-shrink: 0; width: 160px; border-radius: var(--radius); overflow: hidden;
+  background: var(--card); border: 1px solid var(--card-border); cursor: pointer;
+}
+.lcard:active { border-color: var(--green-border); }
+.lcard-img { width: 100%; height: 100px; position: relative; display: flex; align-items: center; justify-content: center; font-size: 28px; }
+.lcard-img::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to bottom, transparent 35%, rgba(0,0,0,0.65) 100%); }
+.lcard-badge { position: absolute; top: 8px; right: 8px; z-index: 1; font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 4px; background: rgba(0,0,0,0.5); color: var(--green); }
+.lcard-play { position: absolute; bottom: 8px; left: 10px; z-index: 1; font-size: 11px; color: #fff; }
+.lcard-body { padding: 9px 10px 11px; }
+.lcard-title { font-size: 13px; font-weight: 700; line-height: 1.35; margin-bottom: 4px; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.lcard-coach { font-size: 10px; color: var(--green); overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
+.lesson-note { font-size: 10px; color: var(--text-faint); margin-top: 9px; line-height: 1.5; }
+
+.v-chips { flex-shrink: 0; display: flex; gap: 8px; overflow-x: auto; padding: 10px 14px 12px; border-bottom: 1px solid var(--card-border); scrollbar-width: none; }
+.v-chips::-webkit-scrollbar { display: none; }
+.v-chip { flex-shrink: 0; padding: 7px 16px; border-radius: 100px; background: var(--card); border: 1px solid var(--card-border); color: var(--text-dim); font-size: 13px; cursor: pointer; }
+.v-chip.active { background: var(--green-dim); border-color: var(--green-border); color: var(--green); font-weight: 700; }
+.v-scroll { flex: 1; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 12px 14px 24px; }
+.v-scroll::-webkit-scrollbar { display: none; }
+.v-count { font-size: 12px; color: var(--text-faint); margin: 2px 2px 12px; }
+.vcard { background: var(--card); border: 1px solid var(--card-border); border-radius: var(--radius); padding: 14px; margin-bottom: 12px; display: flex; gap: 12px; cursor: pointer; position: relative; }
+.vcard:active { background: rgba(255,255,255,0.08); }
+.vthumb { flex-shrink: 0; width: 108px; height: 68px; border-radius: 10px; display: flex; align-items: center; justify-content: center; font-size: 26px; position: relative; overflow: hidden; }
+.vthumb .play-badge { position: absolute; right: 6px; bottom: 6px; background: rgba(0,0,0,0.55); border-radius: 6px; font-size: 10px; color: #fff; padding: 2px 6px; }
+.vinfo { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.vtitle { font-size: 14px; font-weight: 700; line-height: 1.4; margin-bottom: 5px; }
+.vcoach { font-size: 12px; color: var(--green); margin-bottom: 3px; font-weight: 600; }
+.vdesc { font-size: 11px; color: var(--text-dim); line-height: 1.5; }
+.vfav { position: absolute; top: 10px; right: 10px; width: 28px; height: 28px; border: none; background: none; font-size: 16px; cursor: pointer; line-height: 1; color: var(--text-faint); }
+.vfav.on { color: var(--green); }
+.v-empty { text-align: center; color: var(--text-dim); font-size: 13px; padding: 48px 0; line-height: 1.8; }
+.v-foot { margin-top: 18px; padding: 12px 14px; border-radius: 12px; background: rgba(182,255,51,0.05); border: 1px solid rgba(182,255,51,0.15); font-size: 11px; color: var(--text-dim); line-height: 1.7; }
+
+.v-overlay { position: absolute; inset: 0; z-index: 120; background: rgba(0,0,0,0.9); display: none; flex-direction: column; justify-content: center; padding: 14px; }
+.v-overlay.show { display: flex; }
+.v-frame { position: relative; width: 100%; padding-top: 56.25%; border-radius: 12px; overflow: hidden; background: #000; }
+.v-frame iframe { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+.v-meta { margin-top: 14px; }
+.v-p-title { font-size: 15px; font-weight: 700; line-height: 1.5; }
+.v-p-coach { font-size: 12px; color: var(--green); margin-top: 6px; }
+.v-actions { display: flex; gap: 10px; margin-top: 16px; }
+.v-btn { flex: 1; padding: 11px 0; border-radius: 100px; border: none; font-size: 14px; font-weight: 700; cursor: pointer; }
+.v-btn-primary { background: var(--green); color: #0A0C0B; }
+.v-btn-ghost { background: var(--card); border: 1px solid var(--card-border); color: var(--text); }
+.v-close { position: absolute; top: calc(14px + env(safe-area-inset-top, 0px)); right: 14px; width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,0.1); border: none; color: #fff; font-size: 18px; cursor: pointer; }
+
+/* 子视图顶栏返回按钮 */
+.icon-btn.green { color: var(--green); }
 </style>
 </head>
 <body>
@@ -496,6 +549,18 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
       </div>
     </div>
 
+    <!-- 教学视频（与 AI 教练同页，非独立网页） -->
+    <div class="section-wrap">
+      <div class="section-hd">
+        <span class="section-hd-left">🎬 教学视频</span>
+        <span class="section-hd-right" onclick="openLessonsView()">查看全部
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg>
+        </span>
+      </div>
+      <div class="lesson-strip" id="lessonStrip"></div>
+      <div class="lesson-note">B 站公开免费教学 · 官方播放器内嵌 · 版权归各 UP 主所有</div>
+    </div>
+
     <!-- 你可能想问 -->
     <div class="section-wrap">
       <div class="section-hd">
@@ -560,17 +625,213 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
   </div>
 </div>
 
+<!-- 教学视频子视图（coach.html 内的第三个 view） -->
+<div class="view" id="lessonsView" style="display:none;">
+  <div class="top-bar" style="border-bottom:1px solid var(--card-border);">
+    <button class="icon-btn" onclick="closeLessonsView()">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>
+    </button>
+    <span class="top-bar-title">教学视频</span>
+    <div class="top-actions">
+      <button class="icon-btn green" id="favFilterBtn" title="只看收藏" onclick="toggleFavFilter()">☆</button>
+    </div>
+  </div>
+  <div class="v-chips" id="vChips"></div>
+  <div class="v-scroll">
+    <div class="v-count" id="vCount"></div>
+    <div id="vList"></div>
+    <div class="v-foot">
+      ⚠️ 内容说明：以上视频均为 B 站公开免费内容，通过 B 站官方播放器嵌入播放，
+      未下载、未转载任何源文件，版权归各视频 UP 主及原方所有。
+      页面仅供学习导航，点击「在B站打开」可跳转原始页面支持创作者。
+    </div>
+  </div>
+</div>
+
+<!-- 播放器弹层（覆盖整个 app，首页与子视图共用） -->
+<div class="v-overlay" id="vOverlay">
+  <button class="v-close" onclick="closePlayer()">✕</button>
+  <div>
+    <div class="v-frame"><iframe id="vFrame" src="" allowfullscreen scrolling="no" frameborder="0"></iframe></div>
+    <div class="v-meta">
+      <div class="v-p-title" id="vPTitle"></div>
+      <div class="v-p-coach" id="vPCoach"></div>
+      <div class="v-actions">
+        <button class="v-btn v-btn-ghost" onclick="closePlayer()">关闭</button>
+        <button class="v-btn v-btn-primary" id="vPOpen">在B站打开</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 var COACH_API = 'https://cloud1-d0g1q4d5p6fc28083-1439672136.ap-shanghai.app.tcloudbase.com/coach'
 var LEVEL_LABEL = { beginner:'新手 2.0-2.5', intermediate:'进阶 3.0-3.5', advanced:'竞技 4.0+' }
-var STATE = { player: null, history: [], thinking: false, sessionToken: '', launchQuestion: '' }
+var STATE = { player: null, history: [], thinking: false, sessionToken: '', launchQuestion: '', wantLessons: false }
+
+/* ── 教学视频数据（人工验证过的真实 B 站公开视频，官方播放器内嵌） ── */
+var VIDEOS = [
+  { id: 'BV1XM4y187mR', cat: 'forehand', icon: '🎾', grad: 'linear-gradient(135deg,#0D2015,#1E3D22)',
+    title: '详细版 网球正手零基础教学', coach: '盖奥 · 前职业网球运动员/国家级健将',
+    desc: '握拍、蓄力、挥拍全流程拆解，新手筑基首选，专治野路子动作。' },
+  { id: 'BV1R54y1W7Je', cat: 'forehand', icon: '💥', grad: 'linear-gradient(135deg,#132310,#25401E)',
+    title: 'ATP职业选手正拍完全攻略 · 现代版ATP正手', coach: '网球王子频道',
+    desc: '现代职业正手技术体系详解，适合动作成型后进阶参考。' },
+  { id: 'BV1eF411b7HF', cat: 'backhand', icon: '🔄', grad: 'linear-gradient(135deg,#0D1A20,#1E3540)',
+    title: '双手反拍击球技术分解、练习及纠错', coach: '大学网球课程系列',
+    desc: '含握拍/引拍/挥拍/随挥分解 + 多球练习 + 四类常见错误纠正。' },
+  { id: 'BV1g3411h7k3', cat: 'serve', icon: '🚀', grad: 'linear-gradient(135deg,#20150D,#3D2A16)',
+    title: '新手入门：网球发球动作讲解与示范', coach: '网球教学系列',
+    desc: '从大陆式握拍到抛球、蓄力、击打，完整示范一遍学会发球。' },
+  { id: 'BV1xm4y1K7KS', cat: 'volley', icon: '🛡️', grad: 'linear-gradient(135deg,#161020,#2A1E40)',
+    title: '网球截击五部曲', coach: '莫拉托格鲁学院 · 曾执教小威/大坂直美',
+    desc: '站位准备、挥拍动作、收尾姿势，职业级截击五大要诀。' },
+  { id: 'BV1kKqUBPEef', cat: 'volley', icon: '🐢', grad: 'linear-gradient(135deg,#101620,#1E2A40)',
+    title: '辛纳截击高压慢动作 4K 高清参考', coach: '职业训练素材',
+    desc: '职业选手网前技术慢放，观察拍面与重心细节的绝佳素材。' },
+  { id: 'BV1Pk2bBgEvD', cat: 'footwork', icon: '👟', grad: 'linear-gradient(135deg,#1A0D0D,#331919)',
+    title: '40秒掌握费德勒顶级步法', coach: '费德勒亲授示范',
+    desc: '短平快：费德勒球场步法精华示范，碎片时间也能练。' },
+  { id: 'BV1Wa41187vu', cat: 'footwork', icon: '🏃', grad: 'linear-gradient(135deg,#0D1A14,#1A3325)',
+    title: '一个人的网球脚步训练（从新手到大师）', coach: '林老师 · LTA注册教练',
+    desc: '踮步/跳步/分腿垫步/侧滑步十几种练习，一个人就能练。' },
+  { id: 'BV14UzGB1ECZ', cat: 'fitness', icon: '🔥', grad: 'linear-gradient(135deg,#1E100D,#40221A)',
+    title: '球场上有趣的热身指导', coach: '莫拉托格鲁学院',
+    desc: '专业又好玩的热身流程，打球前跟练，预防运动损伤。' }
+];
+var CATS = [
+  { key: 'all', name: '全部' }, { key: 'forehand', name: '正手' },
+  { key: 'backhand', name: '反手' }, { key: 'serve', name: '发球' },
+  { key: 'volley', name: '截击' }, { key: 'footwork', name: '步伐' },
+  { key: 'fitness', name: '热身体能' }, { key: 'tactics', name: '战术' }
+];
+var CAT_NAME = { forehand:'正手', backhand:'反手', serve:'发球', volley:'截击', footwork:'步伐', fitness:'热身体能', tactics:'战术' };
+var curCat = 'all';
+var favOnly = false;
+var favKey = 'tennisf_fav_videos';
+var favs = {};
+try { favs = JSON.parse(localStorage.getItem(favKey) || '{}'); } catch (e) { favs = {}; }
+function catName(k) { return CAT_NAME[k] || '教学'; }
+function saveFavs() { try { localStorage.setItem(favKey, JSON.stringify(favs)); } catch (e) {} }
+
+function syncFavBtn() {
+  var b = document.getElementById('favFilterBtn');
+  if (b) { b.textContent = favOnly ? '★' : '☆'; }
+}
+function renderVChips() {
+  var html = '';
+  CATS.forEach(function(c) {
+    html += '<div class="v-chip' + (c.key === curCat && !favOnly ? ' active' : '') + '" data-key="' + c.key + '">' + c.name + '</div>';
+  });
+  var el = document.getElementById('vChips');
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.children, function(node) {
+    node.onclick = function() { curCat = node.getAttribute('data-key'); favOnly = false; syncFavBtn(); renderVChips(); renderVList(); };
+  });
+}
+function toggleFavFilter() { favOnly = !favOnly; syncFavBtn(); renderVChips(); renderVList(); }
+
+function renderVList() {
+  var list = VIDEOS.filter(function(v) {
+    if (favOnly && !favs[v.id]) return false;
+    return curCat === 'all' || v.cat === curCat;
+  });
+  document.getElementById('vCount').textContent = list.length ? '共 ' + list.length + ' 个视频 · 点击卡片播放' : '';
+  if (!list.length) {
+    document.getElementById('vList').innerHTML = '<div class="v-empty">' +
+      (favOnly ? '还没有收藏的视频<br><br>点卡片右上角 ☆ 即可收藏' : '🚧 战术类视频正在整理中<br><br>先把基本功练扎实，马上就来') + '</div>';
+    return;
+  }
+  var html = '';
+  list.forEach(function(v) {
+    var on = !!favs[v.id];
+    html += '<div class="vcard" data-vid="' + v.id + '">' +
+      '<div class="vthumb" style="background:' + v.grad + '">' + v.icon + '<span class="play-badge">▶ 播放</span></div>' +
+      '<div class="vinfo"><div class="vtitle">' + v.title + '</div><div class="vcoach">' + v.coach + '</div>' +
+      '<div class="vdesc">' + v.desc + '</div></div>' +
+      '<button class="vfav' + (on ? ' on' : '') + '" data-vid="' + v.id + '">' + (on ? '★' : '☆') + '</button>' +
+    '</div>';
+  });
+  var el = document.getElementById('vList');
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.querySelectorAll('.vcard'), function(node) {
+    node.onclick = function(e) { if (e.target.classList.contains('vfav')) return; openPlayer(node.getAttribute('data-vid')); };
+  });
+  Array.prototype.forEach.call(el.querySelectorAll('.vfav'), function(node) {
+    node.onclick = function(e) {
+      e.stopPropagation();
+      var id = node.getAttribute('data-vid');
+      if (favs[id]) { delete favs[id]; } else { favs[id] = 1; }
+      saveFavs(); renderVList(); renderLessonStrip();
+    };
+  });
+}
+
+function renderLessonStrip() {
+  var el = document.getElementById('lessonStrip');
+  if (!el) return;
+  var html = '';
+  VIDEOS.slice(0, 6).forEach(function(v) {
+    html += '<div class="lcard" data-vid="' + v.id + '">' +
+      '<div class="lcard-img" style="background:' + v.grad + '">' + v.icon +
+        '<span class="lcard-badge">' + catName(v.cat) + '</span>' +
+        '<span class="lcard-play">▶ 点击播放</span></div>' +
+      '<div class="lcard-body"><div class="lcard-title">' + v.title + '</div>' +
+      '<div class="lcard-coach">' + v.coach + '</div></div>' +
+    '</div>';
+  });
+  el.innerHTML = html;
+  Array.prototype.forEach.call(el.children, function(node) {
+    node.onclick = function() { openPlayer(node.getAttribute('data-vid')); };
+  });
+}
+
+function openLessonsView() { document.getElementById('lessonsView').style.display = 'flex'; }
+function closeLessonsView() {
+  closePlayer();
+  document.getElementById('lessonsView').style.display = 'none';
+  if (STATE.sessionToken) {
+    document.getElementById('homeView').style.display = 'flex';
+  } else {
+    showErr('链接无效', '请在 TennisF 小程序重新获取 AI 教练链接');
+  }
+}
+function openPlayer(id) {
+  var v = null;
+  VIDEOS.forEach(function(item) { if (item.id === id) v = item; });
+  if (!v) return;
+  document.getElementById('vFrame').src =
+    'https://player.bilibili.com/player.html?bvid=' + v.id + '&page=1&high_quality=1&autoplay=0';
+  document.getElementById('vPTitle').textContent = v.title;
+  document.getElementById('vPCoach').textContent = v.coach;
+  document.getElementById('vPOpen').onclick = function() { window.open('https://www.bilibili.com/video/' + v.id, '_blank'); };
+  document.getElementById('vOverlay').classList.add('show');
+}
+function closePlayer() {
+  document.getElementById('vFrame').src = '';
+  document.getElementById('vOverlay').classList.remove('show');
+}
 
 window.onload = function() {
   var params = new URLSearchParams(location.search)
   var launchToken = params.get('t') || ''
+  STATE.wantLessons = params.get('view') === 'lessons'
   STATE.launchQuestion = ''
   history.replaceState(null, '', location.pathname + location.hash)
-  if (!launchToken) { showErr('链接无效', '请在 TennisF 小程序重新获取教练链接'); return }
+
+  // 教学视频是静态内容，先渲染，不依赖 token 与云函数
+  syncFavBtn(); renderVChips(); renderVList(); renderLessonStrip()
+  if (STATE.wantLessons) openLessonsView()
+
+  if (!launchToken) {
+    // 本地预览（file:// / localhost）：展示首页骨架，便于直接查看教学视频板块
+    var isLocal = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+    if (isLocal && !STATE.wantLessons) { bootUI(); return }
+    // 线上无 token：公开教学视频可直接观看；
+    // AI 教练对话仍严格校验 sessionToken（不放宽 coach access 安全策略）
+    openLessonsView()
+    return
+  }
 
   fetch(COACH_API, {
     method: 'POST',
@@ -589,10 +850,11 @@ window.onload = function() {
     STATE.launchQuestion = data.launchQuestion || ''
     if (!STATE.sessionToken) throw new Error('missing session')
     bootUI()
-    if (STATE.launchQuestion) openChat(STATE.launchQuestion.slice(0, 500))
+    if (!STATE.wantLessons && STATE.launchQuestion) openChat(STATE.launchQuestion.slice(0, 500))
   })
   .catch(function() {
-    showErr('链接已失效', '请在 TennisF 小程序重新获取教练链接')
+    // 视频视图下即使教练接口不可用，也保留视频内容，不弹整屏错误页
+    if (!STATE.wantLessons) showErr('链接已失效', '请在 TennisF 小程序重新获取教练链接')
   })
 }
 
@@ -616,6 +878,7 @@ function bootUI() {
 
 function openChat(preText) {
   document.getElementById('homeView').style.display = 'none'
+  document.getElementById('lessonsView').style.display = 'none'
   document.getElementById('chatView').style.display = 'flex'
   if (STATE.history.length === 0) {
     var p = STATE.player
