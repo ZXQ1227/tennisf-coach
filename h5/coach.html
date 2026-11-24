@@ -523,7 +523,7 @@ html, body { height: 100%; background: #1a1a1a; font-family: -apple-system, 'Pin
 <script>
 var COACH_API = 'https://cloud1-d0g1q4d5p6fc28083-1439672136.ap-shanghai.app.tcloudbase.com/coach'
 var LEVEL_LABEL = { beginner:'新手 2.0-2.5', intermediate:'进阶 3.0-3.5', advanced:'竞技 4.0+' }
-var STATE = { player: null, history: [], thinking: false, sessionToken: '', launchQuestion: '', wantLessons: false }
+var STATE = { player: null, history: [], thinking: false, sessionToken: '', launchQuestion: '', wantLessons: false, lessonsPushed: false }
 
 /* ── 教学视频数据（人工验证过的真实 B 站公开视频，官方播放器内嵌） ── */
 var VIDEOS = [
@@ -642,16 +642,46 @@ function renderLessonStrip() {
   });
 }
 
-function openLessonsView() { document.getElementById('lessonsView').style.display = 'flex'; }
-function closeLessonsView() {
-  closePlayer();
-  document.getElementById('lessonsView').style.display = 'none';
-  if (STATE.sessionToken) {
-    document.getElementById('homeView').style.display = 'flex';
-  } else {
-    showErr('链接无效', '请在 TennisF 小程序重新获取 AI 教练链接');
+/* ── 视图路由：任意时刻只显示一个 view，杜绝一级/二级页面元素叠加 ── */
+function showView(name) {
+  var map = { home: 'homeView', chat: 'chatView', lessons: 'lessonsView' }
+  for (var k in map) {
+    if (!Object.prototype.hasOwnProperty.call(map, k)) continue
+    var el = document.getElementById(map[k])
+    if (el) el.style.display = (k === name) ? 'flex' : 'none'
   }
 }
+
+function openLessonsView() {
+  showView('lessons')
+  var sc = document.querySelector('#lessonsView .v-scroll')
+  if (sc) sc.scrollTop = 0
+  // 压入一条历史记录，让「查看全部」成为可返回的二级页面（支持手机返回键）
+  if (!history.state || history.state.view !== 'lessons') {
+    try {
+      history.pushState({ view: 'lessons' }, '', location.pathname + '#lessons')
+      STATE.lessonsPushed = true
+    } catch (e) {}
+  }
+}
+
+function closeLessonsView() {
+  closePlayer()
+  if (STATE.lessonsPushed && location.hash === '#lessons') {
+    STATE.lessonsPushed = false
+    history.back()          // 由 popstate 统一切回首页
+  } else {
+    showView('home')
+  }
+}
+
+window.addEventListener('popstate', function(e) {
+  closePlayer()
+  STATE.lessonsPushed = false
+  var st = e.state
+  showView((st && st.view === 'lessons') || location.hash === '#lessons' ? 'lessons' : 'home')
+})
+
 function openPlayer(id) {
   var v = null;
   VIDEOS.forEach(function(item) { if (item.id === id) v = item; });
@@ -671,21 +701,25 @@ function closePlayer() {
 window.onload = function() {
   var params = new URLSearchParams(location.search)
   var launchToken = params.get('t') || ''
-  STATE.wantLessons = params.get('view') === 'lessons'
+  STATE.wantLessons = params.get('view') === 'lessons' || location.hash === '#lessons'
   STATE.launchQuestion = ''
-  history.replaceState(null, '', location.pathname + location.hash)
+  // 安全链接用后即弃：清除 URL 中的 token；hash 仅标记二级页，便于刷新恢复
+  try {
+    history.replaceState({ view: STATE.wantLessons ? 'lessons' : 'home' }, '',
+      location.pathname + (STATE.wantLessons ? '#lessons' : ''))
+  } catch (e) {}
 
   // 教学视频是静态内容，先渲染，不依赖 token 与云函数
   syncFavBtn(); renderVChips(); renderVList(); renderLessonStrip()
-  if (STATE.wantLessons) openLessonsView()
+
+  var isLocal = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
+
+  // 需要直接看视频的场景先切视图，避免首页闪现
+  if (STATE.wantLessons || (!launchToken && !isLocal)) openLessonsView()
 
   if (!launchToken) {
-    // 本地预览（file:// / localhost）：展示首页骨架，便于直接查看教学视频板块
-    var isLocal = location.protocol === 'file:' || /^(localhost|127\.0\.0\.1)$/.test(location.hostname)
-    if (isLocal && !STATE.wantLessons) { bootUI(); return }
-    // 线上无 token：公开教学视频可直接观看；
-    // AI 教练对话仍严格校验 sessionToken（不放宽 coach access 安全策略）
-    openLessonsView()
+    // 本地预览展示首页骨架；线上裸链接直接进公开视频库
+    if (isLocal && !STATE.wantLessons) showView('home')
     return
   }
 
@@ -705,18 +739,21 @@ window.onload = function() {
     STATE.player = data.player || {}
     STATE.launchQuestion = data.launchQuestion || ''
     if (!STATE.sessionToken) throw new Error('missing session')
-    bootUI()
-    if (!STATE.wantLessons && STATE.launchQuestion) openChat(STATE.launchQuestion.slice(0, 500))
+    fillHome()
+    // 关键：bootstrap 完成后按目标视图收尾，不再无条件把首页显示出来
+    if (STATE.wantLessons) showView('lessons')
+    else if (STATE.launchQuestion) openChat(STATE.launchQuestion.slice(0, 500))
+    else showView('home')
   })
   .catch(function() {
-    // 视频视图下即使教练接口不可用，也保留视频内容，不弹整屏错误页
-    if (!STATE.wantLessons) showErr('链接已失效', '请在 TennisF 小程序重新获取教练链接')
+    // 视频库是静态内容，教练接口不可用时仍保留；AI 对话的 token 校验不放宽
+    if (STATE.wantLessons) { showView('lessons'); return }
+    showErr('链接已失效', '请在 TennisF 小程序重新获取教练链接')
   })
 }
 
-function bootUI() {
+function fillHome() {
   var p = STATE.player
-  document.getElementById('homeView').style.display = 'flex'
   if (p && p.nickname) {
     document.getElementById('userName').textContent = p.nickname
     if (p.weaknesses && p.weaknesses.length) {
@@ -733,9 +770,8 @@ function bootUI() {
 }
 
 function openChat(preText) {
-  document.getElementById('homeView').style.display = 'none'
-  document.getElementById('lessonsView').style.display = 'none'
-  document.getElementById('chatView').style.display = 'flex'
+  if (location.hash === '#lessons') { try { history.replaceState({ view:'home' }, '', location.pathname) } catch (e) {} }
+  showView('chat')
   if (STATE.history.length === 0) {
     var p = STATE.player
     addMsg('ai', '你好！我是你的 AI 网球教练。' +
@@ -749,8 +785,7 @@ function openChat(preText) {
 }
 
 function backToHome() {
-  document.getElementById('chatView').style.display = 'none'
-  document.getElementById('homeView').style.display = 'flex'
+  showView('home')
 }
 
 function sendFromHome() {
